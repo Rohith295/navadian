@@ -29,6 +29,7 @@ export default function RootLayout({
   plausible.init()
 `}</Script>
 
+  <Script async src="https://c.getopen.so/oa.js" data-key="oa_pk_OelxnxbTJvgILRyVv1i84yBLSSm1FTCM" data-collector="https://c.getopen.so"/>
         
 <Script async src="https://getsleek.io/v1.js" data-site="xRx3jLtq81ymAbbu"/>
         
