@@ -688,7 +688,7 @@ export default function Home() {
           </div>
 
           <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; 2025 Kanba. All rights reserved.</p>
+            <p>&copy; 2025 Kanba. All rights reserved.</p> <iframe src="https://api.getopen.so/embed/w72mdxqw2mb2kyt7pnbb" title="Kanba realtime" width="100%" height="320" loading="lazy" style="border:0"></iframe>
           </div>
         </div>
       </footer>
