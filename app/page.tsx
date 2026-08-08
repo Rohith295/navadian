@@ -614,6 +614,16 @@ export default function Home() {
               <div className="mt-3 hidden sm:block">
                 <LiveStatsButton />
               </div>
+              <div className="mt-4 hidden w-full max-w-[340px] sm:block">
+                <iframe
+                  src="https://api.getopen.so/embed/w6wklojmnuwz4o6j7p1x"
+                  title="Kanba Overview"
+                  width="100%"
+                  height="320"
+                  loading="lazy"
+                  style={{ border: 0 }}
+                />
+              </div>
             </div>
 
             <div>
@@ -689,15 +699,6 @@ export default function Home() {
 
           <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
             <p>&copy; 2025 Kanba. All rights reserved.</p>
-            <iframe
-  src="https://api.getopen.so/embed/w72mdxqw2mb2kyt7pnbb"
-  title="Widget basligi"
-  width="100%"
-  height="320"
-  loading="lazy"
-  style={{ border: 0 }}
-/>
-
           </div>
         </div>
       </footer>
