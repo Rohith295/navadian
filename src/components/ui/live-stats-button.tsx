@@ -7,7 +7,7 @@ interface LiveStatsButtonProps {
 export function LiveStatsButton({ mobile = false }: LiveStatsButtonProps) {
   return (
     <a
-      href="https://getsleek.io/kanba-co"
+      href="https://app.getopen.so/share/s6jnxn83ih5selvets9x"
       target="_blank"
       rel="noopener noreferrer"
       className={`inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
