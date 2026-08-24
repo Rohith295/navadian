@@ -120,8 +120,8 @@ export function ActivityFeed({ projectId, limit = 20 }: ActivityFeedProps) {
         const columnName = details?.name || details?.new?.name || 'a column';
         return `${userName} ${action} column "${columnName}"`;
       case 'task':
-        const taskTitle = details?.title || details?.new?.title || 'a task';
-        return `${userName} ${action} task "${taskTitle}"`;
+        const taskTitle = details?.title || details?.new?.title || 'a request';
+        return `${userName} ${action} request "${taskTitle}"`;
       case 'comment':
         return `${userName} ${action} a comment`;
       case 'member':

@@ -24,6 +24,13 @@ enum TaskPriority {
   high
 }
 
+enum RequestType {
+  NDA
+  Contract
+  MSA
+  Other
+}
+
 enum ProjectMemberRole {
   owner
   admin
@@ -127,6 +134,7 @@ model Task {
   column_id   String
   position    Int
   priority    TaskPriority @default(medium)
+  request_type RequestType @default(Other)
   due_date    DateTime?
   is_done     Boolean      @default(false)
   created_by  String?

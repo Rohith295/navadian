@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * PostgreSQL Setup Script for Kanba
+ * PostgreSQL Setup Script for navaloom
  * 
- * This script helps you set up a local PostgreSQL database for Kanba development.
+ * This script helps you set up a local PostgreSQL database for navaloom development.
  * It will:
  * 1. Check if PostgreSQL is running
  * 2. Create the database if it doesn't exist
@@ -15,7 +15,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('Setting up PostgreSQL for Kanba...\n');
+console.log('Setting up PostgreSQL for navaloom...\n');
 
 // Check if .env file exists
 const envPath = path.join(process.cwd(), '.env.local');

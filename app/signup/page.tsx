@@ -71,7 +71,7 @@ export default function SignUpPage() {
     }
   };
 
-  const handleOAuthSignIn = async (provider: 'google' | 'github') => {
+  const handleOAuthSignIn = async (provider: 'google') => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -108,12 +108,12 @@ export default function SignUpPage() {
                   src={theme === 'light' ? '/logo-light.png' : '/logo-dark.png'} 
                   width={50} 
                   height={50} 
-                  alt="Kanba Logo" 
+                  alt="navaloom Logo"
                 />
               </div>
-          <CardTitle className="text-2xl">Welcome to Kanba</CardTitle>
+          <CardTitle className="text-2xl">Welcome to navaloom</CardTitle>
           <CardDescription>
-            Create your account and get started with Kanba today
+            Create your account and get started with navaloom today
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -127,16 +127,6 @@ export default function SignUpPage() {
             >
               <Image src="/google.svg" alt="Google" width={20} height={20} />
               Sign up with Google
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full flex items-center justify-center gap-2"
-              onClick={() => handleOAuthSignIn('github')}
-              disabled={loading}
-            >
-              <Image src="/github.svg" alt="GitHub" width={20} height={20} className="dark: invert"/>
-              Sign up with GitHub
             </Button>
           </div>
           <form onSubmit={handleSignUp} className="space-y-4">

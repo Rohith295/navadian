@@ -101,10 +101,9 @@ CREATE TRIGGER refresh_after_project_creation
   FOR EACH ROW EXECUTE FUNCTION refresh_after_project_change();
 
 -- Also refresh after project member changes (already exists but let's ensure it's there)
+-- Note: the correct trigger wrapper function is (re)created by the next migration
+-- (precious_credit), which also recreates this trigger against it.
 DROP TRIGGER IF EXISTS refresh_after_member_change ON project_members;
-CREATE TRIGGER refresh_after_member_change
-  AFTER INSERT OR UPDATE OR DELETE ON project_members
-  FOR EACH ROW EXECUTE FUNCTION refresh_user_accessible_projects();
 
 -- Test that the policies work correctly
 DO $$

@@ -14,8 +14,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/navbar";
-import { GitStarButton } from "@/src/components/eldoraui/gitstarbutton";
-import { LiveStatsButton } from "@/src/components/ui/live-stats-button";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -44,11 +42,9 @@ import {
   Star,
   Crown,
   TabletSmartphone,
-  GithubIcon,
 } from "lucide-react";
 import { ShineBorder } from "@/src/components/magicui/shine-border";
 import TextReveal from "@/src/components/magicui/text-reveal";
-import LovedBy from "@/components/customized/avatar/avatar-12";
 
 export default function Home() {
   const { user, loading, signOut } = useUser();
@@ -60,9 +56,9 @@ export default function Home() {
   const [features] = React.useState([
     {
       icon: <Kanban className="h-5 w-5 text-gray-400 dark:text-gray-300 " />,
-      title: "Kanban Boards",
+      title: "Request Pipelines",
       description:
-        "Visualize your workflow with customizable Kanban boards. Drag and drop tasks between columns.",
+        "Track every NDA, contract, and MSA through custom stages. Drag and drop requests as they move through review.",
     },
     {
       icon: <Zap className="h-5 w-5 text-gray-400 dark:text-gray-300 " />,
@@ -74,19 +70,19 @@ export default function Home() {
       icon: <Users className="h-5 w-5 text-gray-400 dark:text-gray-300 " />,
       title: "Team collaboration",
       description:
-        "Invite team members, assign tasks, and collaborate seamlessly in real-time.",
+        "Assign requests to the right reviewer, discuss in context, and collaborate seamlessly in real-time.",
     },
     {
       icon: <Shield className="h-5 w-5 text-gray-400 dark:text-gray-300" />,
       title: "Secure & Reliable",
       description:
-        "Your data is protected with enterprise-grade security and backed up automatically.",
+        "Your contracts and legal data are protected with enterprise-grade security and backed up automatically.",
     },
     {
       icon: <Crown className="h-5 w-5 text-gray-400 dark:text-gray-300" />,
       title: "Unlimited Projects",
       description:
-        "Pro plan includes unlimited projects, advanced features, and priority support.",
+        "Pro plan includes unlimited request queues, advanced features, and priority support.",
     },
     {
       icon: (
@@ -94,7 +90,7 @@ export default function Home() {
       ),
       title: "Responsive Design",
       description:
-        "Access your projects from anywhere even on mobile devices, with our fully responsive design.",
+        "Review and action requests from anywhere, even on mobile devices, with our fully responsive design.",
     },
   ]);
 
@@ -107,7 +103,7 @@ export default function Home() {
       priceNote: "/month",
       features: [
         { text: "1 Project", available: true },
-        { text: "Unlimited Tasks", available: true },
+        { text: "Unlimited Requests", available: true },
         { text: "All Core Features", available: true },
       ],
       button: {
@@ -124,7 +120,7 @@ export default function Home() {
       priceNote: "/month",
       features: [
         { text: "Unlimited Projects", available: true },
-        { text: "Unlimited Tasks", available: true },
+        { text: "Unlimited Requests", available: true },
         { text: "All Core Features", available: true },
         { text: "Advanced Features", available: true },
         { text: "Team Management", available: true },
@@ -140,32 +136,6 @@ export default function Home() {
         text: "Upgrade to Pro",
         href: user ? "/dashboard/billing" : "/signup",
         variant: "default" as "default",
-      },
-    },
-    {
-      title: "Self-Host",
-      isPro: false,
-      description: "Run Kanba on your own server",
-      price: "Free",
-      priceNote: "",
-      features: [
-        { text: "Full control", available: true },
-        { text: "All Features Included", available: true },
-        { text: "Full Access to the Source Code", available: true },
-        { text: "Complete Customization", available: true },
-        { text: "Your Data Stays with You", available: true },
-        { text: "White-label Branding", available: true },
-      ],
-      button: {
-        text: (
-          <>
-            <GithubIcon className="h-4 w-4 mr-1" />
-            View on GitHub
-          </>
-        ),
-        href: "https://github.com/Uaghazade1/kanba",
-        variant: "outline" as "outline",
-        external: true,
       },
     },
   ]);
@@ -209,25 +179,14 @@ export default function Home() {
       >
         <div className="max-w-7xl mx-auto text-center">
          
-          <div className="flex items-center justify-center mb-4">
-        <div className="flex justify-center items-center">
-  <br />
-<br />
-<a href="https://vercel.com/oss">
-  <Image alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge.svg" width={200} height={60} unoptimized />
-</a>
-    <br />
-<br />
-</div>
-        </div>
           <h1 className="text-4xl sm:text-6xl tracking-tight mb-6">
-            Project Management
+            Contract Lifecycle Management
             <span className="bg-gradient-to-r from-pink-600 via-blue-500 to-yellow-400 text-transparent bg-clip-text block p-2">
-              Reimagined for Builders
+              Built for Legal Teams
             </span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-          An open-source platform to move fast and build what matters. Simple, powerful, and yes, AI-powered.
+          Track every NDA, contract, and MSA from request to signature. Assign, review, and close legal requests without the email chains.
           </p>
           <div className="flex sm:flex-row gap-4 justify-center">
             {user ? (
@@ -247,13 +206,6 @@ export default function Home() {
                 </Button>
               </>
             )}
-          </div>
-          <div className="flex flex-col items-center justify-center mt-10 gap-2">
-            <LovedBy />
-            <span className="text-sm text-muted-foreground mt-2">
-              Already loved by{" "}
-              <span className="font-semibold text-primary">+1000 people</span>
-            </span>
           </div>
         </div>
       </section>
@@ -285,9 +237,9 @@ export default function Home() {
       >
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-5xl text-primary">Everything You Need to</h2>
+            <h2 className="text-5xl text-primary">Everything Your Legal Team Needs to</h2>
             <p className="text-5xl text-gray-500">
-              Stay Organized and Productive
+              Move Requests Faster
             </p>
           </div>
 
@@ -361,60 +313,6 @@ export default function Home() {
         </div>
       </section>
       
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl text-primary mb-12">
-            You are in good company            </h2>
-            
-            {/* Badges Container */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-12">
-              
-              {/* Product Hunt Badge */}
-              <div className="flex flex-col items-center gap-2">
-                <span className="text-sm text-muted-foreground font-medium">#4 on Product Hunt</span>
-                <a 
-                  href="https://www.producthunt.com/products/kanba?embed=true&utm_source=badge-top-post-badge&utm_medium=badge&utm_source=badge-kanba" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transition-transform hover:scale-105"
-                >
-                  <Image 
-                    src="https://api.producthunt.com/widgets/embed-image/v1/top-post-badge.svg?post_id=995809&theme=light&period=daily&t=1754924750233"
-                    alt="Kanba - Open-source project management tool for modern teams | Product Hunt" 
-                    className="w-[200px] sm:w-[250px] h-auto"
-                    width={250} 
-                    height={54}
-                    unoptimized
-                  />
-                </a>
-              </div>
-
-              {/* Vercel OSS Badge */}
-              <div className="flex flex-col items-center gap-2">
-                <span className="text-sm text-muted-foreground font-medium">Supported by Vercel</span>
-                <a 
-                  href="https://vercel.com/oss" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transition-transform hover:scale-105"
-                >
-                  <Image 
-                    alt="Vercel OSS Program" 
-                    src="https://vercel.com/oss/program-badge.svg" 
-                    width={250} 
-                    height={54} 
-                    unoptimized 
-                    className="w-[200px] sm:w-[250px] h-[54px] border border-border rounded-xl p-2 bg-background"
-                  />
-                </a>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section
         className={cn(
           "py-20 px-4 sm:px-6 lg:px-8",
@@ -422,9 +320,9 @@ export default function Home() {
         )}
       >
         <TextReveal>
-          Kanba is an open-source project management tool for makers and teams. Cut
-          the noise, focus on what matters. Not trying to replace Trello or Jira, just
-          doing project management simple and right.
+          navaloom is a contract lifecycle management tool for legal teams. Cut
+          the email chains, focus on closing requests. Not trying to replace your
+          e-signature tool, just making the intake, review, and approval process simple and right.
         </TextReveal>
       </section>
 
@@ -576,7 +474,7 @@ export default function Home() {
           />
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[#f7f8f9] [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)] dark:bg-[#1d1d1f]"></div>
           <p className="relative z-20 text-center bg-gradient-to-b from-neutral-200 to-neutral-500 bg-clip-text py-8 text-4xl font-bold text-transparent sm:text-7xl">
-            Ready to organize your work better?
+            Ready to close requests faster?
           </p>
           <div className="mt-6 z-[50] relative">
             <Button size="lg" asChild>
@@ -599,31 +497,18 @@ export default function Home() {
                   src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
                   width={40}
                   height={40}
-                  alt="Kanba Logo"
+                  alt="navaloom Logo"
                 />
-                <span className="">Kanba</span>
+                <span className="">navaloom</span>
               </div>
               <p className="text-sm text-gray-500 hover:text-primary transition-all duration-200 dark:text-gray-400">
-                The modern way to manage your projects with beautiful Kanban
-                boards.
+                Contract lifecycle management, built for legal teams tracking
+                NDAs, contracts, and MSAs from request to signature.
               </p>
               <Status status="online" className="inline-flex items-center">
                 <StatusIndicator />
                 <StatusLabel />
               </Status>
-              <div className="mt-3 hidden sm:block">
-                <LiveStatsButton />
-              </div>
-              <div className="mt-4 hidden w-full max-w-[340px] sm:block">
-                <iframe
-                  src="https://api.getopen.so/embed/w6wklojmnuwz4o6j7p1x"
-                  title="Kanba Overview"
-                  width="100%"
-                  height="320"
-                  loading="lazy"
-                  style={{ border: 0 }}
-                />
-              </div>
             </div>
 
             <div>
@@ -643,15 +528,6 @@ export default function Home() {
                     className="text-gray-500 hover:text-primary transition-all duration-200 dark:text-gray-400"
                   >
                     Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="https://github.com/Uaghazade1/kanba/"
-                    target="_blank"
-                    className="text-gray-500 hover:text-primary transition-all duration-200 dark:text-gray-400"
-                  >
-                    Changelog
                   </Link>
                 </li>
               </ul>
@@ -687,7 +563,7 @@ export default function Home() {
                 </li>
                 <li>
                   <Link
-                    href="mailto:ua@kanba.co"
+                    href="mailto:support@navaloom.app"
                     className="text-gray-500 hover:text-primary transition-all duration-200 dark:text-gray-400"
                   >
                     Contact
@@ -698,7 +574,7 @@ export default function Home() {
           </div>
 
           <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; 2025 Kanba. All rights reserved.</p>
+            <p>&copy; 2026 navaloom. All rights reserved.</p>
           </div>
         </div>
       </footer>

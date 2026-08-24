@@ -77,8 +77,10 @@ export default function NewProjectPage() {
   };
 
   const canCreateProject = () => {
-    if (!profile) return false;
-    return profile.subscription_status === 'pro' || projectCount < 1;
+    // Pro/free project-count gate disabled for now — revisit later.
+    // if (!profile) return false;
+    // return profile.subscription_status === 'pro' || projectCount < 1;
+    return true;
   };
 
   // Generate slug from project name

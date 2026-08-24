@@ -27,6 +27,7 @@ export interface Task {
   description: string | null;
   position: number;
   priority: 'low' | 'medium' | 'high';
+  request_type: 'NDA' | 'Contract' | 'MSA' | 'Other';
   due_date: string | null;
   is_done: boolean;
   created_at: string;
@@ -35,6 +36,21 @@ export interface Task {
   updated_by: string | null;
   assigned_to: string | null;
   profiles?: {
+    id: string;
+    email: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+}
+
+export interface ProjectNote {
+  id: string;
+  project_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  profiles: {
     id: string;
     email: string;
     full_name: string | null;

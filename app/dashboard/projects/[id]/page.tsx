@@ -40,6 +40,7 @@ import {
 import { TeamManagement } from '@/components/team-management';
 import { TaskComments } from '@/components/task-comments';
 import { ActivityFeed } from '@/components/activity-feed';
+import { ProjectNotes } from '@/components/project-notes';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/components/user-provider';
 import { toast } from 'sonner';
@@ -56,6 +57,7 @@ import {
   MessageSquare,
   Users,
   Activity,
+  NotepadText,
   Code,
   Share2
 } from 'lucide-react';
@@ -101,6 +103,7 @@ export default function ProjectPage() {
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
   const [taskPriority, setTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [taskRequestType, setTaskRequestType] = useState<'NDA' | 'Contract' | 'MSA' | 'Other'>('Other');
   const [taskDueDate, setTaskDueDate] = useState('');
   const [taskAssignedTo, setTaskAssignedTo] = useState<string | undefined>(undefined);
   
@@ -261,6 +264,7 @@ export default function ProjectPage() {
           column_id: selectedColumnId,
           position: nextPosition,
           priority: taskPriority,
+          request_type: taskRequestType,
           due_date: taskDueDate || null,
           assigned_to: taskAssignedTo || null, // FIXED: Use null instead of empty string
           created_by: user!.id,
@@ -271,7 +275,7 @@ export default function ProjectPage() {
 
       if (error) throw error;
 
-      toast.success('Task created successfully!');
+      toast.success('Request created successfully!');
       
       // Reset form
       resetTaskForm();
@@ -281,7 +285,7 @@ export default function ProjectPage() {
       await loadProject();
     } catch (error: any) {
       console.error('Error creating task:', error);
-      toast.error(error.message || 'Failed to create task');
+      toast.error(error.message || 'Failed to create request');
     } finally {
       setCreating(false);
     }
@@ -305,6 +309,7 @@ export default function ProjectPage() {
           description: taskDescription.trim() || null,
           column_id: selectedColumnId,
           priority: taskPriority,
+          request_type: taskRequestType,
           due_date: taskDueDate || null,
           assigned_to: taskAssignedTo || null, // FIXED: Use null instead of empty string
           updated_by: user!.id,
@@ -313,7 +318,7 @@ export default function ProjectPage() {
 
       if (error) throw error;
 
-      toast.success('Task updated successfully!');
+      toast.success('Request updated successfully!');
       
       // Reset form
       resetTaskForm();
@@ -324,14 +329,14 @@ export default function ProjectPage() {
       await loadProject();
     } catch (error: any) {
       console.error('Error updating task:', error);
-      toast.error(error.message || 'Failed to update task');
+      toast.error(error.message || 'Failed to update request');
     } finally {
       setCreating(false);
     }
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) {
+    if (!confirm('Are you sure you want to delete this request?')) {
       return;
     }
 
@@ -343,11 +348,11 @@ export default function ProjectPage() {
 
       if (error) throw error;
 
-      toast.success('Task deleted successfully!');
+      toast.success('Request deleted successfully!');
       await loadProject();
     } catch (error: any) {
       console.error('Error deleting task:', error);
-      toast.error(error.message || 'Failed to delete task');
+      toast.error(error.message || 'Failed to delete request');
     }
   };
 
@@ -363,11 +368,11 @@ export default function ProjectPage() {
 
       if (error) throw error;
 
-      toast.success(isDone ? 'Task marked as done!' : 'Task marked as not done!');
+      toast.success(isDone ? 'Request marked as done!' : 'Request marked as not done!');
       await loadProject();
     } catch (error: any) {
       console.error('Error toggling task done status:', error);
-      toast.error(error.message || 'Failed to update task status');
+      toast.error(error.message || 'Failed to update request status');
     }
   };
 
@@ -593,6 +598,7 @@ export default function ProjectPage() {
     setTaskTitle(task.title);
     setTaskDescription(task.description || '');
     setTaskPriority(task.priority);
+    setTaskRequestType(task.request_type || 'Other');
     setTaskDueDate(task.due_date ? task.due_date.split('T')[0] : '');
     setTaskAssignedTo(task.assigned_to || undefined);
     setSelectedColumnId(task.column_id);
@@ -654,6 +660,7 @@ export default function ProjectPage() {
     setTaskTitle('');
     setTaskDescription('');
     setTaskPriority('medium');
+    setTaskRequestType('Other');
     setTaskDueDate('');
     setTaskAssignedTo(undefined); // FIXED: Use undefined instead of empty string
     setSelectedColumnId('');
@@ -704,7 +711,7 @@ export default function ProjectPage() {
           .eq('id', task.id)
       );
       await Promise.all(updatePromises);
-      toast.success('Task reordered!');
+      toast.success('Request reordered!');
 
     } else {
       // Moving to a different column
@@ -757,10 +764,10 @@ export default function ProjectPage() {
         );
 
         await Promise.all([...sourceUpdatePromises, ...finishUpdatePromises]);
-        toast.success('Task moved to new column!');
+        toast.success('Request moved to new column!');
       } catch (error) {
         console.error("Error moving task:", error);
-        toast.error("Failed to move task. Reverting changes.");
+        toast.error("Failed to move request. Reverting changes.");
         // Revert UI on error
         await loadProject();
       }
@@ -912,6 +919,10 @@ export default function ProjectPage() {
             <Activity className="h-4 w-4 mr-2" />
             Activity
           </TabsTrigger>
+          <TabsTrigger value="notes">
+            <NotepadText className="h-4 w-4 mr-2" />
+            Notes
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="board" className="space-y-6">
@@ -940,15 +951,19 @@ export default function ProjectPage() {
         <TabsContent value="activity">
           <ActivityFeed projectId={project?.id} />
         </TabsContent>
+
+        <TabsContent value="notes">
+          <ProjectNotes projectId={project?.id || ''} currentUserId={user?.id || ''} />
+        </TabsContent>
       </Tabs>
 
-      {/* Edit Task Dialog */}
+      {/* Edit Request Dialog */}
       <Dialog key={editingTask?.id || 'edit-dialog'} open={editTaskDialogOpen} onOpenChange={setEditTaskDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Task</DialogTitle>
+            <DialogTitle>Edit Request</DialogTitle>
             <DialogDescription>
-              Update the task details.
+              Update the request details.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditTask} className="space-y-4">
@@ -967,30 +982,45 @@ export default function ProjectPage() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="editTitle">Task Title *</Label>
+              <Label htmlFor="editTitle">Request Title *</Label>
               <Input
                 id="editTitle"
                 value={taskTitle}
                 onChange={(e) => setTaskTitle(e.target.value)}
-                placeholder="Enter task title"
+                placeholder="Enter request title"
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="editDescription">Description</Label>
               <Textarea
                 id="editDescription"
                 value={taskDescription}
                 onChange={(e) => setTaskDescription(e.target.value)}
-                placeholder="Enter task description (optional)"
+                placeholder="Enter request description (optional)"
                 rows={3}
               />
             </div>
-            
-            <div className="grid grid-cols-2 gap-4">
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="editRequestType">Request Type</Label>
+                <Select value={taskRequestType} onValueChange={(value: 'NDA' | 'Contract' | 'MSA' | 'Other') => setTaskRequestType(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NDA">NDA</SelectItem>
+                    <SelectItem value="Contract">Contract</SelectItem>
+                    <SelectItem value="MSA">MSA</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="editPriority">Priority</Label>
                 <Select value={taskPriority} onValueChange={(value: 'low' | 'medium' | 'high') => setTaskPriority(value)}>
@@ -1004,7 +1034,7 @@ export default function ProjectPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="editDueDate">Due Date</Label>
                 <Input
@@ -1036,7 +1066,7 @@ export default function ProjectPage() {
             <div className="flex gap-3 pt-4">
               <Button type="submit" size="xs" disabled={creating} className="flex-1">
                 {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Update Task
+                Update Request
               </Button>
               <Button type="button" size="xs" variant="outline" onClick={() => setEditTaskDialogOpen(false)}>
                 Cancel
@@ -1089,7 +1119,7 @@ export default function ProjectPage() {
               {selectedTask?.title}
             </DialogTitle>
             <DialogDescription>
-              Task comments and discussion
+              Request comments and discussion
             </DialogDescription>
           </DialogHeader>
           {selectedTask && (
@@ -1152,7 +1182,7 @@ export default function ProjectPage() {
           <DialogHeader>
             <DialogTitle>Delete Project</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this project? This action cannot be undone and will permanently remove all tasks, columns, and team members.
+              Are you sure you want to delete this project? This action cannot be undone and will permanently remove all requests, columns, and team members.
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-3 pt-4">
@@ -1177,13 +1207,13 @@ export default function ProjectPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Create Task Dialog */}
+      {/* Create Request Dialog */}
       <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New Task</DialogTitle>
+            <DialogTitle>Create New Request</DialogTitle>
             <DialogDescription>
-              Add a new task to your project board.
+              Add a new request to your project board.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateTask} className="space-y-4">
@@ -1202,30 +1232,45 @@ export default function ProjectPage() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="title">Task Title *</Label>
+              <Label htmlFor="title">Request Title *</Label>
               <Input
                 id="title"
                 value={taskTitle}
                 onChange={(e) => setTaskTitle(e.target.value)}
-                placeholder="Enter task title"
+                placeholder="Enter request title"
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
                 value={taskDescription}
                 onChange={(e) => setTaskDescription(e.target.value)}
-                placeholder="Enter task description (optional)"
+                placeholder="Enter request description (optional)"
                 rows={3}
               />
             </div>
-            
-            <div className="grid grid-cols-2 gap-4">
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="requestType">Request Type</Label>
+                <Select value={taskRequestType} onValueChange={(value: 'NDA' | 'Contract' | 'MSA' | 'Other') => setTaskRequestType(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NDA">NDA</SelectItem>
+                    <SelectItem value="Contract">Contract</SelectItem>
+                    <SelectItem value="MSA">MSA</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="priority">Priority</Label>
                 <Select value={taskPriority} onValueChange={(value: 'low' | 'medium' | 'high') => setTaskPriority(value)}>
@@ -1239,7 +1284,7 @@ export default function ProjectPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="dueDate">Due Date</Label>
                 <Input
@@ -1271,7 +1316,7 @@ export default function ProjectPage() {
             <div className="flex gap-3 pt-4">
               <Button type="submit" size="xs" disabled={creating} className="flex-1">
                 {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Task
+                Create Request
               </Button>
               <Button type="button" variant="outline" size="xs" onClick={() => setTaskDialogOpen(false)}>
                 Cancel

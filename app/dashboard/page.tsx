@@ -153,9 +153,11 @@ export default function DashboardPage() {
   };
 
   const canCreateProject = () => {
-    if (!profile) return false;
-    const ownedProjects = projects.filter(p => p.user_id === user?.id);
-    return profile.subscription_status === 'pro' || ownedProjects.length < 1;
+    // Pro/free project-count gate disabled for now — revisit later.
+    // if (!profile) return false;
+    // const ownedProjects = projects.filter(p => p.user_id === user?.id);
+    // return profile.subscription_status === 'pro' || ownedProjects.length < 1;
+    return true;
   };
 
   const getProjectRole = (project: Project) => {
@@ -221,7 +223,7 @@ export default function DashboardPage() {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between  ">
-            <CardTitle className="text-sm font-medium">Assigned Tasks</CardTitle>
+            <CardTitle className="text-sm font-medium">Assigned Requests</CardTitle>
             <div className="text-sm font-bold">{assignedTasks.length}</div>
           </CardHeader>
         </Card>
@@ -279,7 +281,7 @@ export default function DashboardPage() {
                 <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <CardTitle className="mb-2">No projects yet</CardTitle>
                 <CardDescription className="mb-4">
-                  Create your first project to get started with Kanba
+                  Create your first project to get started with navaloom
                 </CardDescription>
                 <Button onClick={() => router.push('/dashboard/projects/new')}>
                   <Plus className="h-4 w-4 mr-2" />
@@ -325,24 +327,24 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Assigned Tasks Sidebar */}
+        {/* Assigned Requests Sidebar */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
                 <User className="h-5 w-5 mr-2" />
-                <span className="text-lg font-normal">Tasks Assigned to You</span>
+                <span className="text-lg font-normal">Requests Assigned to You</span>
               </CardTitle>
               <CardDescription>
-                Recent tasks you need to work on
+                Recent requests you need to work on
               </CardDescription>
             </CardHeader>
             <CardContent>
               {assignedTasks.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <CheckSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No tasks assigned</p>
-                  <p className="text-sm">Tasks assigned to you will appear here</p>
+                  <p>No requests assigned</p>
+                  <p className="text-sm">Requests assigned to you will appear here</p>
                 </div>
               ) : (
                 <div className="space-y-3">

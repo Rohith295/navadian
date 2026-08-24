@@ -25,8 +25,6 @@ import {
   KanbanIcon
 } from 'lucide-react';
 import { Badge } from './ui/badge';
-import { GitStarButton } from '@/src/components/eldoraui/gitstarbutton';
-import { LiveStatsButton } from '@/src/components/ui/live-stats-button';
 
 interface NavbarProps {
   user?: {
@@ -62,7 +60,7 @@ export function Navbar({ user, onSignOut, loading = false }: NavbarProps) {
                   src={theme === 'light' ? '/logo-light.png' : '/logo-dark.png'} 
                   width={40} 
                   height={40} 
-                  alt="Kanba Logo" 
+                  alt="navaloom Logo"
                 />
                 <Badge variant="outline" className="hidden sm:inline-flex text-xs text-gray-500 border border-gray-200 dark:border-gray-700 dark:text-gray-400 rounded-full">Beta</Badge>
               </div>
@@ -81,15 +79,6 @@ export function Navbar({ user, onSignOut, loading = false }: NavbarProps) {
           </div>
 
           <div className="flex items-center space-x-4">
-            <div className="hidden sm:block">
-              <GitStarButton mobile={false} />
-            </div>
-            <div className="sm:hidden">
-              <GitStarButton mobile={true} />
-            </div>
-            <div className="hidden sm:block">
-              <LiveStatsButton mobile={false} />
-            </div>
             <Button
               variant="ghost"
               size="icon"

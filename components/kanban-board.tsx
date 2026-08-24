@@ -54,6 +54,15 @@ function TaskCard({ task, index, onEdit, onDelete, onViewComments, onToggleDone,
     }
   };
 
+  const getRequestTypeColor = (requestType: string) => {
+    switch (requestType) {
+      case 'NDA': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300';
+      case 'Contract': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
+      case 'MSA': return 'bg-teal-100 text-teal-800 dark:bg-teal-900/20 dark:text-teal-300';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300';
+    }
+  };
+
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
   const assignedUser = projectMembers.find(member => member.user_id === task.assigned_to);
 
@@ -121,7 +130,8 @@ function TaskCard({ task, index, onEdit, onDelete, onViewComments, onToggleDone,
                 </p>
               )}
               <div className="flex justify-between items-center text-xs text-muted-foreground">
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                    <Badge variant="secondary" className={`text-xs ${getRequestTypeColor(task.request_type)}`}>{task.request_type}</Badge>
                     <Badge variant="secondary" className={`text-xs ${getPriorityColor(task.priority)}`}><Flag className="h-3 w-3 mr-1" />{task.priority}</Badge>
                 </div>
                 <div className="flex items-center"><User className="h-3 w-3 mr-1" />{assignedUser ? (assignedUser.profiles.full_name || assignedUser.profiles.email) : 'Unassigned'}</div>
@@ -215,7 +225,7 @@ export function KanbanBoard({
                     {provided.placeholder}
                     {!readOnly && (
                       <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground" size="sm" onClick={() => onAddTask(column.id)}>
-                        <Plus className="h-4 w-4 mr-2" />Add a task
+                        <Plus className="h-4 w-4 mr-2" />Add a request
                       </Button>
                     )}
                   </CardContent>

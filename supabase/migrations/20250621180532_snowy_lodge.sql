@@ -88,6 +88,8 @@ DROP POLICY IF EXISTS "Users can view comments in accessible projects" ON task_c
 DROP POLICY IF EXISTS "Users can create comments in accessible projects" ON task_comments;
 DROP POLICY IF EXISTS "Users can update their own comments" ON task_comments;
 DROP POLICY IF EXISTS "Users can delete their own comments" ON task_comments;
+DROP POLICY IF EXISTS "Users can update own comments" ON task_comments;
+DROP POLICY IF EXISTS "Users can delete own comments" ON task_comments;
 
 DROP POLICY IF EXISTS "Users can view activity in accessible projects" ON activity_logs;
 DROP POLICY IF EXISTS "Users can create activity in accessible projects" ON activity_logs;

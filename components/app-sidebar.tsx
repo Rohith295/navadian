@@ -21,7 +21,6 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   FolderOpenIcon,
-  NotepadTextIcon,
   Cable,
   PlugZap,
   List,
@@ -92,8 +91,7 @@ const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Projects", url: "/dashboard/projects", icon: FolderIcon },
   { title: "Bookmarks", url: "/dashboard/bookmarks", icon: Bookmark },
-  { title: "Notes (soon)", url: "/dashboard/notes", icon: NotepadTextIcon, disabled: true },
-  { title: "Analytics (soon)", url: "/dashboard/analytics", icon: BarChartIcon, disabled: true },
+  { title: "Analytics", url: "/dashboard/analytics", icon: BarChartIcon },
   { title: "Integrations (soon)", url: "/dashboard/integrations", icon: PlugZap, disabled: true },
   { title: "Lists (soon)", url: "/dashboard/listd", icon: List, disabled: true },
   { title: "AI Planner (soon)", url: "/dashboard/integrations", icon: Brain, disabled: true },
@@ -217,9 +215,9 @@ export function AppSidebar({ onSignOut, onProjectUpdate }: AppSidebarProps) {
                   src={theme === 'dark' ? '/logo-dark.png' : '/logo-light.png'} 
                   width={40} 
                   height={40} 
-                  alt="Kanba Logo" 
+                  alt="navaloom Logo"
                 />
-                <span className="text-lg">Kanba</span>
+                <span className="text-lg">navaloom</span>
                 </Link>
                 <Badge variant="outline" className="text-xs text-gray-500 border border-gray-200 dark:border-gray-700 dark:text-gray-400 rounded-full">Beta</Badge>
 
@@ -239,29 +237,19 @@ export function AppSidebar({ onSignOut, onProjectUpdate }: AppSidebarProps) {
             <SidebarMenu>
               {menuItems.map((item) => {
                 if (item.title === "Bookmarks") {
-                  const isPro = userData.subscription === 'pro';
+                  // Pro gate disabled for now — revisit later.
+                  // const isPro = userData.subscription === 'pro';
                   return (
                     <SidebarMenuItem key={item.title}>
-                      {isPro ? (
-                        <SidebarMenuButton
-                          asChild
-                          isActive={pathname?.startsWith("/dashboard/bookmarks") || false}
-                        >
-                          <Link href={item.url}>
-                            <item.icon className="w-4 h-4" />
-                            <span>{item.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      ) : (
-                        <SidebarMenuButton
-                          onClick={() => router.push('/dashboard/billing')}
-                          className="relative opacity-60 cursor-pointer"
-                        >
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname?.startsWith("/dashboard/bookmarks") || false}
+                      >
+                        <Link href={item.url}>
                           <item.icon className="w-4 h-4" />
                           <span>{item.title}</span>
-                          <span className="ml-2 px-2 py-0.5 text-xs bg-yellow-400 text-black rounded-full absolute right-2 top-1/2 -translate-y-1/2"><CrownIcon size="12px"/></span>
-                        </SidebarMenuButton>
-                      )}
+                        </Link>
+                      </SidebarMenuButton>
                     </SidebarMenuItem>
                   );
                 }
