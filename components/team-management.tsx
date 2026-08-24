@@ -64,9 +64,10 @@ interface TeamManagementProps {
   projectId: string;
   userSubscriptionStatus: 'free' | 'pro' | null;
   isProjectOwner: boolean;
+  onMembersChange?: () => void | Promise<void>;
 }
 
-export function TeamManagement({ projectId, userSubscriptionStatus, isProjectOwner }: TeamManagementProps) {
+export function TeamManagement({ projectId, userSubscriptionStatus, isProjectOwner, onMembersChange }: TeamManagementProps) {
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -311,6 +312,7 @@ export function TeamManagement({ projectId, userSubscriptionStatus, isProjectOwn
       
       // Reload members
       await loadMembers();
+      await onMembersChange?.();
     } catch (error: any) {
       console.error('Error inviting member:', error);
       toast.error(error.message || 'Failed to invite member');
@@ -334,6 +336,7 @@ export function TeamManagement({ projectId, userSubscriptionStatus, isProjectOwn
 
       toast.success(`${memberName} has been removed from the project`);
       await loadMembers();
+      await onMembersChange?.();
     } catch (error: any) {
       console.error('Error removing member:', error);
       toast.error('Failed to remove member');
@@ -351,6 +354,7 @@ export function TeamManagement({ projectId, userSubscriptionStatus, isProjectOwn
 
       toast.success(`${memberName}'s role has been updated to ${newRole}`);
       await loadMembers();
+      await onMembersChange?.();
     } catch (error: any) {
       console.error('Error updating role:', error);
       toast.error('Failed to update role');

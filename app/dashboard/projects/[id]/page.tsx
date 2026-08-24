@@ -169,7 +169,7 @@ export default function ProjectPage() {
       setProject(project);
 
       // Load project members
-      await loadProjectMembers();
+      await loadProjectMembers(project.id);
 
       // Get columns with tasks
       const { data: columns, error: columnsError } = await supabase
@@ -214,23 +214,33 @@ export default function ProjectPage() {
     }
   };
 
-  const loadProjectMembers = async () => {
+  const loadProjectMembers = async (projectUuid: string) => {
     try {
       const { data: members, error } = await supabase
-        .from('project_members')
+        .from('project_members_with_profiles')
         .select(`
-          *,
-          profiles:user_id (
-            id,
-            email,
-            full_name,
-            avatar_url
-          )
+          id,
+          user_id,
+          role,
+          profile_id,
+          profile_email,
+          profile_full_name,
+          profile_avatar_url
         `)
-        .eq('project_id', project?.id);
+        .eq('project_id', projectUuid);
 
       if (error) throw error;
-      setProjectMembers(members || []);
+      setProjectMembers((members || []).map((member) => ({
+        id: member.id,
+        user_id: member.user_id,
+        role: member.role,
+        profiles: {
+          id: member.profile_id,
+          email: member.profile_email,
+          full_name: member.profile_full_name,
+          avatar_url: member.profile_avatar_url,
+        },
+      })));
     } catch (error: any) {
       console.error('Error loading project members:', error);
     }
@@ -945,6 +955,7 @@ export default function ProjectPage() {
             projectId={project?.id}
             userSubscriptionStatus={profile?.subscription_status || 'free'}
             isProjectOwner={isProjectOwner}
+            onMembersChange={() => project && loadProjectMembers(project.id)}
           />
         </TabsContent>
 
@@ -1048,7 +1059,7 @@ export default function ProjectPage() {
 
             <div className="space-y-2">
               <Label htmlFor="editAssignedTo">Assign To</Label>
-              <Select value={taskAssignedTo || ''} onValueChange={(value) => setTaskAssignedTo(value || undefined)}>
+              <Select value={taskAssignedTo || 'unassigned'} onValueChange={(value) => setTaskAssignedTo(value === 'unassigned' ? undefined : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select team member (optional)" />
                 </SelectTrigger>
@@ -1298,7 +1309,7 @@ export default function ProjectPage() {
 
             <div className="space-y-2">
               <Label htmlFor="assignedTo">Assign To</Label>
-              <Select value={taskAssignedTo || ''} onValueChange={(value) => setTaskAssignedTo(value || undefined)}>
+              <Select value={taskAssignedTo || 'unassigned'} onValueChange={(value) => setTaskAssignedTo(value === 'unassigned' ? undefined : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select team member (optional)" />
                 </SelectTrigger>

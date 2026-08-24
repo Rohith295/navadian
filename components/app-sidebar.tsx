@@ -95,7 +95,7 @@ const menuItems = [
   { title: "Integrations (soon)", url: "/dashboard/integrations", icon: PlugZap, disabled: true },
   { title: "Lists (soon)", url: "/dashboard/listd", icon: List, disabled: true },
   { title: "AI Planner (soon)", url: "/dashboard/integrations", icon: Brain, disabled: true },
-  { title: "Meetings (soon)", url: "/dashboard/integrations", icon: Calendar, disabled: true },
+  { title: "Calendar", url: "/dashboard/calendar", icon: Calendar },
   { title: "Settings", url: "/dashboard/settings", icon: SettingsIcon },
   { title: "Billing", url: "/dashboard/billing", icon: CreditCardIcon },
 ]
@@ -374,4 +374,4 @@ export function AppSidebar({ onSignOut, onProjectUpdate }: AppSidebarProps) {
       </SidebarFooter>
     </Sidebar>
   )
-} 
+}
