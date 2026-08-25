@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getURL } from '@/lib/stripe';
 import { supabaseAdmin, verifySlackSignature } from '@/lib/slack';
-import { suggestRequestFields, refineIntakeRequest, runThreadAgent } from '@/lib/ai';
+import { suggestRequestFields, refineIntakeRequest, runThreadAgent, detectRequestIntent } from '@/lib/ai';
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
@@ -37,6 +37,34 @@ export async function POST(request: NextRequest) {
       await handleThreadReply(payload.event, payload.team_id);
     } catch (error) {
       console.error('Failed to handle Slack thread reply:', error);
+    }
+  }
+
+  if (
+    payload.type === 'event_callback' &&
+    payload.event?.type === 'message' &&
+    payload.event.channel_type === 'im' &&
+    !payload.event.thread_ts &&
+    !payload.event.bot_id
+  ) {
+    try {
+      await handleDirectMessage(payload.event, payload.team_id);
+    } catch (error) {
+      console.error('Failed to handle Slack DM:', error);
+    }
+  }
+
+  if (
+    payload.type === 'event_callback' &&
+    payload.event?.type === 'message' &&
+    payload.event.channel_type !== 'im' &&
+    !payload.event.thread_ts &&
+    !payload.event.bot_id
+  ) {
+    try {
+      await handlePassiveMessage(payload.event, payload.team_id, payload.authorizations?.[0]?.user_id);
+    } catch (error) {
+      console.error('Failed to handle passive Slack message:', error);
     }
   }
 
@@ -106,6 +134,24 @@ async function handleAppMention(event: any, teamId: string) {
     }
   }
 
+  const strippedText = (event.text || '').replace(/<@[A-Z0-9]+>/g, '').trim();
+  await createRequestFromSlackMessage({ event, teamId, workspace, rawText: strippedText });
+}
+
+// Creates a Request from a Slack message — shared by an @mention, a passively
+// detected channel message, and a DM. Handles AI cleanup/classification,
+// insert, thread-tracking, attachments, and the confirmation reply.
+async function createRequestFromSlackMessage({
+  event,
+  teamId,
+  workspace,
+  rawText,
+}: {
+  event: any;
+  teamId: string;
+  workspace: any;
+  rawText: string;
+}) {
   const { data: column } = await supabaseAdmin
     .from('columns')
     .select('id')
@@ -124,20 +170,19 @@ async function handleAppMention(event: any, teamId: string) {
     .select('id', { count: 'exact', head: true })
     .eq('column_id', column.id);
 
-  const strippedText = (event.text || '').replace(/<@[A-Z0-9]+>/g, '').trim();
   const requesterName = await fetchSlackDisplayName(event.user, workspace.bot_access_token);
 
   // Best-effort AI cleanup + classification — falls back to the raw text
   // and safe defaults if the configured model is unreachable, never blocks
   // Request creation. The raw message is always kept in source_text either way.
-  let title = strippedText || 'Slack request from Slack';
+  let title = rawText || 'Slack request from Slack';
   let description = requesterName ? `Requested via Slack by ${requesterName}` : 'Requested via Slack';
   let requestType: 'NDA' | 'Contract' | 'MSA' | 'Other' = 'Other';
   let priority: 'low' | 'medium' | 'high' = 'medium';
 
   try {
-    if (strippedText) {
-      const refined = await refineIntakeRequest({ rawText: strippedText, requesterName, channel: 'slack' });
+    if (rawText) {
+      const refined = await refineIntakeRequest({ rawText, requesterName, channel: 'slack' });
       title = refined.title;
       description = refined.description;
     }
@@ -153,7 +198,7 @@ async function handleAppMention(event: any, teamId: string) {
     .insert({
       title,
       description,
-      source_text: strippedText || null,
+      source_text: rawText || null,
       source_channel: 'slack',
       column_id: column.id,
       request_type: requestType,
@@ -193,6 +238,66 @@ async function handleAppMention(event: any, teamId: string) {
       text: `Created a Request: ${link}${attachmentNote}`,
     }),
   });
+}
+
+// Opt-in per Slack connection (off by default): reads every top-level channel
+// message and uses an AI gate to decide whether it's actually a request,
+// ignoring everything else. Skips anything that mentions the bot — that
+// message is already handled by the app_mention delivery of the same event.
+async function handlePassiveMessage(event: any, teamId: string, botUserId: string | undefined) {
+  if (botUserId && (event.text || '').includes(`<@${botUserId}>`)) return;
+  if (!event.text) return;
+
+  const eventId = `${event.event_ts || event.ts}:${event.channel}`;
+  const { error: dedupeError } = await supabaseAdmin
+    .from('slack_processed_events')
+    .insert({ slack_event_id: eventId });
+
+  if (dedupeError) return;
+
+  const { data: workspace } = await supabaseAdmin
+    .from('slack_workspaces')
+    .select('project_id, bot_access_token, installed_by, passive_monitoring, projects:project_id(slug)')
+    .eq('team_id', teamId)
+    .maybeSingle();
+
+  if (!workspace || !workspace.passive_monitoring) return;
+
+  try {
+    const { is_request } = await detectRequestIntent({ text: event.text });
+    if (!is_request) return;
+  } catch (error) {
+    console.error('Failed to classify passive Slack message, skipping:', error);
+    return;
+  }
+
+  await createRequestFromSlackMessage({ event, teamId, workspace, rawText: event.text.trim() });
+}
+
+// Opt-in per Slack connection (off by default): DMing the bot directly is a
+// deliberate 1:1 action, so every DM is treated like an implicit mention —
+// no intent gate needed. Follow-up replies inside the DM thread are already
+// handled by handleThreadReply, which matches purely on (channel, thread_ts)
+// regardless of channel type.
+async function handleDirectMessage(event: any, teamId: string) {
+  if (!event.text) return;
+
+  const eventId = `${event.event_ts || event.ts}:${event.channel}`;
+  const { error: dedupeError } = await supabaseAdmin
+    .from('slack_processed_events')
+    .insert({ slack_event_id: eventId });
+
+  if (dedupeError) return;
+
+  const { data: workspace } = await supabaseAdmin
+    .from('slack_workspaces')
+    .select('project_id, bot_access_token, installed_by, dm_enabled, projects:project_id(slug)')
+    .eq('team_id', teamId)
+    .maybeSingle();
+
+  if (!workspace || !workspace.dm_enabled) return;
+
+  await createRequestFromSlackMessage({ event, teamId, workspace, rawText: event.text.trim() });
 }
 
 // Syncs a reply in a Slack thread we created a Request from into that

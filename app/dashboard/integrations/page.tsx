@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Slack, Check, Mail } from 'lucide-react';
 import { useUser } from '@/components/user-provider';
@@ -18,6 +20,8 @@ interface OwnedProject {
 interface SlackStatus {
   connected: boolean;
   teamName: string | null;
+  passiveMonitoring: boolean;
+  dmEnabled: boolean;
 }
 
 interface EmailStatus {
@@ -125,6 +129,24 @@ export default function IntegrationsPage() {
     }
   };
 
+  const toggleSlackSetting = async (field: 'passive_monitoring' | 'dm_enabled', value: boolean) => {
+    const { data: session } = await supabase.auth.getSession();
+    const token = session.session?.access_token;
+    if (!token || !selectedProjectId) return;
+
+    const res = await fetch(`/api/slack/status?project_id=${selectedProjectId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: value }),
+    });
+
+    if (res.ok) {
+      loadStatus(selectedProjectId);
+    } else {
+      toast.error('Failed to update setting');
+    }
+  };
+
   const connectEmail = async () => {
     const { data: session } = await supabase.auth.getSession();
     const token = session.session?.access_token;
@@ -203,14 +225,44 @@ export default function IntegrationsPage() {
             </div>
 
             {status?.connected ? (
-              <div className="flex items-center justify-between">
-                <Badge variant="secondary" className="gap-1">
-                  <Check className="h-3 w-3" />
-                  Connected{status.teamName ? ` to ${status.teamName}` : ''}
-                </Badge>
-                <Button variant="outline" onClick={disconnect}>
-                  Disconnect
-                </Button>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary" className="gap-1">
+                    <Check className="h-3 w-3" />
+                    Connected{status.teamName ? ` to ${status.teamName}` : ''}
+                  </Badge>
+                  <Button variant="outline" onClick={disconnect}>
+                    Disconnect
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="passive-monitoring">Watch all channel messages</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Create Requests from messages that don't mention the bot, when they look like a real request.
+                    </p>
+                  </div>
+                  <Switch
+                    id="passive-monitoring"
+                    checked={status.passiveMonitoring}
+                    onCheckedChange={(checked) => toggleSlackSetting('passive_monitoring', checked)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="dm-enabled">Respond to DMs</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Create a Request from any direct message sent to the bot.
+                    </p>
+                  </div>
+                  <Switch
+                    id="dm-enabled"
+                    checked={status.dmEnabled}
+                    onCheckedChange={(checked) => toggleSlackSetting('dm_enabled', checked)}
+                  />
+                </div>
               </div>
             ) : (
               <Button onClick={connect} disabled={!selectedProjectId}>

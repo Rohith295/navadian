@@ -93,6 +93,32 @@ details that weren't there. Message: "${rawText}"`,
   };
 }
 
+const requestIntentSchema = z.object({
+  is_request: z
+    .boolean()
+    .describe('true only for a clear, actionable ask for something legal/contract-related — an NDA, contract, MSA, review, etc.'),
+  rationale: z.string().describe('One short sentence explaining the decision'),
+});
+
+// Gate used for passive channel monitoring — the bot wasn't addressed, so
+// this decides whether a message is worth turning into a Request at all.
+// False negatives (missing a real request) are far cheaper than false
+// positives (spamming a channel with junk tickets), so bias toward false.
+export async function detectRequestIntent({ text }: { text: string }): Promise<{ is_request: boolean; rationale: string }> {
+  const { object } = await generateObject({
+    model: getModel(),
+    schema: requestIntentSchema,
+    prompt: `A message was posted in a Slack channel a legal-request bot is monitoring, without addressing the bot
+directly. Decide whether it's a clear, actionable ask for something legal/contract-related (an NDA, contract, MSA,
+review, etc.) that should become a Request — or just ordinary chat, a question not aimed at getting something done,
+banter, etc. When in doubt, say it is NOT a request — a missed request is far cheaper than a false alarm.
+
+Message: "${text}"`,
+  });
+
+  return object;
+}
+
 // Handles a Slack thread reply as an agent turn: the model decides whether
 // to answer a question (getTaskStatus), look up who's available
 // (getTeamMembers), draft a change (proposeChange — never applies anything
