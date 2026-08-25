@@ -1,7 +1,8 @@
-import { generateObject, generateText } from 'ai';
+import { generateObject, generateText, stepCountIs } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { openai, createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
+import { supabaseAdmin } from '@/lib/slack';
 
 // Every call site asks for "the configured model" — never imports a provider
 // directly. Switching AI_PROVIDER/AI_MODEL is a config change, not a rewrite.
@@ -92,54 +93,89 @@ details that weren't there. Message: "${rawText}"`,
   };
 }
 
-const threadReplyIntentSchema = z.object({
-  is_actionable: z
-    .boolean()
-    .describe('true if this message requests a concrete change to the ticket (reassign, change priority/type); false if it is just a comment, question, or FYI'),
-  suggested_assignee_id: z.string().nullable().describe('Team member id to reassign to, if requested'),
-  suggested_priority: z.enum(['low', 'medium', 'high']).nullable().describe('New priority, if requested'),
-  suggested_request_type: z.enum(['NDA', 'Contract', 'MSA', 'Other']).nullable().describe('New request type, if requested'),
-  rationale: z.string().describe('One short sentence explaining what was requested, for an internal audit log'),
-  reply_message: z
-    .string()
-    .nullable()
-    .describe(
-      'Only when is_actionable is true: a short, friendly Slack reply in your own words. If you resolved a ' +
-        'concrete change, briefly confirm what you understood (a link to review/confirm it will be appended after ' +
-        'your message, so do not invent one). If you could not resolve it (e.g. no matching team member), explain ' +
-        'that and name who is actually available to assign from the team members list. Null if not actionable.'
-    ),
-});
-
-export type ThreadReplyIntent = z.infer<typeof threadReplyIntentSchema>;
-
-export async function classifyThreadReply({
+// Handles a Slack thread reply as an agent turn: the model decides whether
+// to answer a question (getTaskStatus), look up who's available
+// (getTeamMembers), draft a change (proposeChange — never applies anything
+// directly, just inserts a pending task_ai_suggestions row), or just
+// acknowledge a plain comment. One call replaces what used to be a growing
+// set of hand-coded classification branches.
+export async function runThreadAgent({
   text,
+  taskId,
   teamMembers,
 }: {
   text: string;
+  taskId: string;
   teamMembers: { id: string; name: string }[];
-}): Promise<ThreadReplyIntent> {
-  const { object } = await generateObject({
+}): Promise<{ reply: string | null; proposed: boolean }> {
+  let proposed = false;
+  const modelId = process.env.AI_MODEL || (process.env.AI_PROVIDER === 'openai' ? 'gpt-4o' : 'claude-sonnet-5');
+
+  const result = await generateText({
     model: getModel(),
-    schema: threadReplyIntentSchema,
-    prompt: `This is a reply on an existing legal request ticket. Decide whether it's just a comment/FYI, or whether
-it's actually asking for a concrete change to the ticket (reassigning it to someone, changing its priority, or
-changing its type).
+    stopWhen: stepCountIs(4),
+    system: `You're handling a Slack reply on an existing legal request ticket (a CLM tool's Request).
+Use getTaskStatus to answer questions about the ticket (status, priority, assignee, due date, checklist).
+Use getTeamMembers if you need to know who's available, e.g. for a reassignment request.
+If the message clearly requests a concrete change — reassign it, change its priority, or change its type —
+call proposeChange. That only drafts the change for a human to confirm in the app; it does not apply anything,
+so you can call it even if you're not 100% sure, the human will review it. If proposeChange can't find a
+matching team member for a requested reassignment, don't call it — just explain who's actually available instead.
+If the message is just a comment, FYI, or you have nothing useful to add, reply with an empty string.
+Keep replies short and friendly, like a real Slack message.`,
+    prompt: text,
+    tools: {
+      getTaskStatus: {
+        description: "Get this ticket's current status, priority, type, assignee, due date, and checklist progress.",
+        inputSchema: z.object({}),
+        execute: async () => {
+          const { data: task } = await supabaseAdmin
+            .from('tasks')
+            .select('title, priority, request_type, due_date, is_done, profiles:assigned_to(full_name, email), columns:column_id(name)')
+            .eq('id', taskId)
+            .maybeSingle();
 
-Message: "${text}"
+          const { data: checklist } = await supabaseAdmin.from('task_checklist_items').select('is_done').eq('task_id', taskId);
+          const done = (checklist || []).filter((c) => c.is_done).length;
 
-Team members available to assign (pick the best fit by name, or null if none mentioned/fit):
-${teamMembers.map((m) => `- ${m.id}: ${m.name}`).join('\n') || '(no team members)'}
-
-Only set is_actionable=true if the message clearly requests one of those changes. A question, status update, or
-general comment is NOT actionable. If it's actionable but you can't find a matching team member for a requested
-reassignment, still set is_actionable=true and leave suggested_assignee_id null — but write reply_message
-explaining that, in your own words, and naming who from the team members list above is actually available to
-assign instead (or say there's no one else yet if the list is empty).`,
+          return {
+            ...task,
+            assignee: (task as any)?.profiles?.full_name || (task as any)?.profiles?.email || 'Unassigned',
+            status: (task as any)?.columns?.name || 'Unknown',
+            checklist: checklist ? `${done}/${checklist.length} done` : 'No checklist',
+          };
+        },
+      },
+      getTeamMembers: {
+        description: 'List the team members available to assign this ticket to.',
+        inputSchema: z.object({}),
+        execute: async () => ({ teamMembers }),
+      },
+      proposeChange: {
+        description: 'Draft a change to the ticket for human confirmation. Does not apply anything directly.',
+        inputSchema: z.object({
+          assignee_id: z.string().nullable().describe('Team member id to reassign to'),
+          priority: z.enum(['low', 'medium', 'high']).nullable(),
+          request_type: z.enum(['NDA', 'Contract', 'MSA', 'Other']).nullable(),
+          rationale: z.string().describe('One short sentence explaining what was requested, for an internal audit log'),
+        }),
+        execute: async (params: any) => {
+          await supabaseAdmin.from('task_ai_suggestions').insert({
+            task_id: taskId,
+            request_type: params.request_type,
+            priority: params.priority,
+            suggested_assignee: params.assignee_id,
+            rationale: params.rationale,
+            model: modelId,
+          });
+          proposed = true;
+          return { drafted: true };
+        },
+      },
+    },
   });
 
-  return object;
+  return { reply: result.text.trim() || null, proposed };
 }
 
 export async function summarizeThread({

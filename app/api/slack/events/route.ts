@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getURL } from '@/lib/stripe';
 import { supabaseAdmin, verifySlackSignature } from '@/lib/slack';
-import { suggestRequestFields, refineIntakeRequest, classifyThreadReply } from '@/lib/ai';
+import { suggestRequestFields, refineIntakeRequest, runThreadAgent } from '@/lib/ai';
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
@@ -286,39 +286,12 @@ async function handleThreadFollowUp({
   }));
 
   try {
-    const intent = await classifyThreadReply({ text, teamMembers });
-    if (!intent.is_actionable) return;
-
-    const hasChange = intent.suggested_assignee_id || intent.suggested_priority || intent.suggested_request_type;
-
-    if (!hasChange) {
-      // Actionable request, but nothing could be resolved (e.g. no matching
-      // team member) — the model writes its own explanation (who's actually
-      // available, etc.) in reply_message rather than us templating one.
-      if (intent.reply_message) {
-        await fetch('https://slack.com/api/chat.postMessage', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${botAccessToken}` },
-          body: JSON.stringify({ channel, thread_ts: threadTs, text: intent.reply_message }),
-        });
-      }
-      return;
-    }
-
-    const modelId = process.env.AI_MODEL || (process.env.AI_PROVIDER === 'openai' ? 'gpt-4o' : 'claude-sonnet-5');
-
-    await supabaseAdmin.from('task_ai_suggestions').insert({
-      task_id: taskId,
-      request_type: intent.suggested_request_type,
-      priority: intent.suggested_priority,
-      suggested_assignee: intent.suggested_assignee_id,
-      rationale: intent.rationale,
-      model: modelId,
-    });
+    const { reply, proposed } = await runThreadAgent({ text, taskId, teamMembers });
+    if (!reply) return;
 
     const projectSlug = (task as any).columns?.projects?.slug;
     const link = `${getURL()}dashboard/projects/${projectSlug}?task=${task.task_key}`;
-    const message = intent.reply_message ? `${intent.reply_message} ${link}` : `Drafted that change — review and confirm here: ${link}`;
+    const message = proposed ? `${reply} ${link}` : reply;
 
     await fetch('https://slack.com/api/chat.postMessage', {
       method: 'POST',
@@ -326,7 +299,7 @@ async function handleThreadFollowUp({
       body: JSON.stringify({ channel, thread_ts: threadTs, text: message }),
     });
   } catch (error) {
-    console.error('Failed to classify thread reply:', error);
+    console.error('Failed to run thread agent:', error);
   }
 }
 
