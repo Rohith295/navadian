@@ -1,162 +1,108 @@
+# navadian
 
-<div align="right">
-  <details>
-    <summary >🌐 Language</summary>
-    <div>
-      <div align="center">
-        <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=en">English</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=zh-CN">简体中文</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=zh-TW">繁體中文</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=ja">日本語</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=ko">한국어</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=hi">हिन्दी</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=th">ไทย</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=fr">Français</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=de">Deutsch</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=es">Español</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=it">Itapano</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=ru">Русский</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=pt">Português</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=nl">Nederlands</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=pl">Polski</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=ar">العربية</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=fa">فارسی</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=tr">Türkçe</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=vi">Tiếng Việt</a>
-        | <a href="https://openaitx.github.io/view.html?user=Uaghazade1&project=kanba&lang=id">Bahasa Indonesia</a>
-      </div>
-    </div>
-  </details>
-</div>
+Contract Lifecycle Management for legal teams — track every NDA, contract, and MSA
+from request to signature. Requests can come from the app itself, a Slack mention,
+or a forwarded email; an AI layer classifies, drafts, and (with human confirmation)
+proposes changes.
 
-<div align="center">
-  <br />
-<br />
-<a href="https://kanba.co">
-  <img alt="Kanba" src="https://www.kanba.co/dark-hero.png" style=" width: 800px " />
-</a>
-    <br />
-<br />
-</div>
+Built on Next.js (App Router), Supabase (Postgres + Auth + Storage), and the
+[Vercel AI SDK](https://ai-sdk.dev) (provider-agnostic — Anthropic, OpenAI, or any
+OpenAI-compatible endpoint).
 
-<div align="center">
-  <br />
-<br />
-<a href="https://vercel.com/oss">
-  <img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge.svg" />
-</a>
-    <br />
-<br />
-</div>
-# Open-source, lightweight Trello alternative designed for makers and indie hackers.
+> This is a fork of the open-source [Kanba](https://github.com/Kanba-co/kanba) project
+> (MIT License, Copyright (c) 2025 Abbas Aga). See `LICENSE`.
 
-Focus on simplicity, speed, and scalability.
-Built with modern stack: Tailwind CSS, shadcn/ui, Supabase, Stripe integration.
-Supports unlimited projects, team collaboration, dark/light mode, and seamless user experience.
-Perfect for solo devs and small teams who want full control without unnecessary complexity.
+## Shared project, per-person local setup
 
-## 🌟 If you find this project useful, consider giving it a star! It helps others discover it too.
+This repo talks to one shared Supabase project (not a separate database per developer)
+and, if enabled, one shared Slack app / Postmark account. You can reuse the project
+owner's `.env.local` values as-is for Supabase/AI/Slack/Postmark credentials — but
+**webhooks (Slack, email) only reach whichever machine's tunnel URL is currently
+configured** in Slack's/Postmark's dashboards, so only one person is "live" for those
+at a time unless this is deployed somewhere permanent. Everyone can run their own
+`ngrok` tunnel and swap the webhook URLs when it's their turn to test.
 
-# Deployment Guide
+**Whoever set this up should never hand out `SUPABASE_SERVICE_ROLE_KEY` or the AI/Slack/
+Postmark secrets casually** — they're full-access credentials (the service role key
+bypasses row-level security entirely), not read-only tokens.
 
-## Overview
-This application now uses local Next.js API routes instead of Supabase Edge Functions for Stripe integration. This makes deployment simpler and allows you to use standard .env files for configuration.
+## Required setup
 
-## Environment Variables Setup
+1. `npm install`
+2. Create (or get invited to) a Supabase project. Log in, link it once, then push the schema:
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref <your-project-ref>
+   make db
+   ```
+   Every migration lives in `supabase/migrations/` — that's the source of truth for
+   the schema (the `prisma/` folder is reference-only, not what's actually applied).
+   Run `make db` again any time new migrations are added.
+3. Copy `.env.example` to `.env.local` and fill in at minimum:
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+   - `NEXT_PUBLIC_SITE_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`
+4. `npm run dev`
 
-### 1. Create .env.local file
-Copy `.env.example` to `.env.local` and fill in your actual values:
+This alone gets projects, boards, and email/password auth working. Google sign-in
+needs a Google OAuth client configured in Supabase Auth's provider settings
+(shared per Supabase project, not per developer).
 
-```bash
-cp .env.example .env.local
+## Optional integrations
+
+Each is independent — the app works without any of them, just with that feature
+inactive.
+
+### AI Planner / Assistant / Slack+email request classification
+Set in `.env.local`:
 ```
-
-### 2. Required Environment Variables
-
-#### Supabase Configuration
-- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous key
-- `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key (server-side only)
-
-#### Stripe Configuration (optional)
-- `STRIPE_SECRET_KEY` - Your Stripe secret key (server-side only)
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Your Stripe publishable key
-- `STRIPE_WEBHOOK_SECRET` - Your Stripe webhook secret
-
-#### Site Configuration
-- `NEXT_PUBLIC_SITE_URL` - Your site URL (for production)
-- `NEXTAUTH_URL` - Your site URL (same as above)
-- `NEXTAUTH_SECRET` - A random secret for NextAuth
-
-## Local Development
-
-1. Install dependencies:
-```bash
-npm install
+AI_PROVIDER=anthropic        # or 'openai', or 'custom' for any OpenAI-compatible endpoint
+AI_MODEL=claude-sonnet-5
+ANTHROPIC_API_KEY=...        # or OPENAI_API_KEY, or AI_BASE_URL + AI_API_KEY for 'custom'
 ```
+Powers: per-Request AI suggestions (`/dashboard/ai-planner`), the chat Assistant
+(`/dashboard/assistant`), and cleaning up raw Slack/email text into a proper title
+and description.
 
-2. Set up your environment variables in `.env.local`
+### Slack
+1. Create a Slack app at api.slack.com under **your own** workspace (the workspace you
+   create it in doesn't matter — it's not where it gets installed later). Do **not**
+   enable Socket Mode or Enterprise Managed Auth.
+2. Bot Token Scopes: `app_mentions:read`, `chat:write`, `users:read`, `files:read`,
+   `channels:history`. Subscribe to bot events `app_mention` and `message.channels`.
+3. Run a public tunnel: `make up` starts Next.js + ngrok together on the domain in
+   the `Makefile`'s `NGROK_DOMAIN` — override it with your own reserved ngrok domain:
+   `make up NGROK_DOMAIN=your-domain.ngrok-free.dev`.
+4. In the Slack app: OAuth Redirect URL → `https://<your-domain>/api/slack/oauth/callback`;
+   Events Request URL → `https://<your-domain>/api/slack/events`.
+5. Set `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET`, `SLACK_SIGNING_SECRET` in `.env.local`.
+6. Connect it from `/dashboard/integrations` (picks which project Slack-created
+   Requests land in).
 
-3. Run the development server:
-```bash
-npm run dev
-```
+If you change scopes later, reinstall the app from the same page — Slack requires it.
 
-4. Test Stripe webhooks locally using Stripe CLI:
-```bash
-stripe listen --forward-to localhost:3000/api/stripe/webhook
-```
+### Email intake
+Uses [Postmark](https://postmarkapp.com) Inbound Parse — no domain/DNS setup required
+to start (every Postmark Server gets a working `<hash>@inbound.postmarkapp.com`
+address immediately).
+1. Create a Postmark account + Server, enable **Inbound**.
+2. Set the inbound webhook URL to `https://<your-tunnel-domain>/api/email/inbound?token=<pick-a-secret>`.
+3. Set `POSTMARK_SERVER_TOKEN` (the Server's API token), `EMAIL_INBOUND_SECRET`
+   (the secret you picked), `EMAIL_INBOUND_ADDRESS` (the Postmark-given address) in
+   `.env.local`.
+4. Connect it from `/dashboard/integrations`.
 
-## Production Deployment
+### Billing (Stripe)
+Env vars exist in `.env.example`, but pricing/plan-limit enforcement is currently
+disabled in the code — Stripe isn't functional right now regardless of keys set.
 
+## For AI coding agents picking this up
 
-### Vercel Deployment
-
-1. **Deploy to Vercel:**
-```bash
-npx vercel
-```
-
-2. **Environment Variables:**
-   Add all environment variables through Vercel dashboard or CLI
-
-3. **Stripe Webhook Setup:**
-   - Point webhook to: `https://your-domain.vercel.app/api/stripe/webhook`
-
-## API Endpoints
-
-The application now uses these local API routes:
-
-- `POST /api/stripe/checkout` - Creates Stripe checkout sessions
-- `POST /api/stripe/webhook` - Handles Stripe webhook events
-
-## Benefits of Local API Routes
-
-1. **Simpler Deployment** - No need to deploy separate edge functions
-2. **Environment Variables** - Standard .env file support
-3. **Better Debugging** - Easier to debug locally
-4. **Framework Integration** - Better integration with Next.js
-5. **No Vendor Lock-in** - Can deploy to any platform that supports Next.js
-
-## Troubleshooting
-
-1. **Webhook Issues:**
-   - Ensure `STRIPE_WEBHOOK_SECRET` matches your Stripe webhook endpoint
-   - Check webhook logs in Stripe dashboard
-   - Verify webhook URL is correct
-
-2. **Environment Variables:**
-   - Ensure all required variables are set
-   - Check for typos in variable names
-   - Verify Supabase service role key has proper permissions
-
-3. **CORS Issues:**
-   - API routes include proper CORS headers
-   - Ensure your domain is whitelisted if needed
-
-## Security Notes
-
-- Never expose `STRIPE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY` to the client
-- Use `NEXT_PUBLIC_` prefix only for client-side variables
-- Regularly rotate your webhook secrets
-- Monitor webhook delivery in Stripe dashboard
+- `supabase/migrations/` is the real schema — read it before assuming a table shape.
+- `lib/ai.ts` is the single place that talks to a model; every feature asks it for
+  "the configured model" via `getModel()` rather than importing a provider directly.
+- `lib/slack.ts` / `lib/access.ts` hold the auth-check patterns (`requireProjectAdmin`,
+  `requireTaskAccess`) reused across the Slack, email, and AI API routes — follow the
+  same pattern for new server routes rather than inventing another one.
+- RLS is the real access-control boundary for anything running with the user's own
+  session (the Assistant's tools, the dashboard pages); service-role routes (Slack/
+  email webhooks) must scope every query manually since there's no logged-in user.
