@@ -99,7 +99,16 @@ const threadReplyIntentSchema = z.object({
   suggested_assignee_id: z.string().nullable().describe('Team member id to reassign to, if requested'),
   suggested_priority: z.enum(['low', 'medium', 'high']).nullable().describe('New priority, if requested'),
   suggested_request_type: z.enum(['NDA', 'Contract', 'MSA', 'Other']).nullable().describe('New request type, if requested'),
-  rationale: z.string().describe('One short sentence explaining what was requested'),
+  rationale: z.string().describe('One short sentence explaining what was requested, for an internal audit log'),
+  reply_message: z
+    .string()
+    .nullable()
+    .describe(
+      'Only when is_actionable is true: a short, friendly Slack reply in your own words. If you resolved a ' +
+        'concrete change, briefly confirm what you understood (a link to review/confirm it will be appended after ' +
+        'your message, so do not invent one). If you could not resolve it (e.g. no matching team member), explain ' +
+        'that and name who is actually available to assign from the team members list. Null if not actionable.'
+    ),
 });
 
 export type ThreadReplyIntent = z.infer<typeof threadReplyIntentSchema>;
@@ -124,7 +133,10 @@ Team members available to assign (pick the best fit by name, or null if none men
 ${teamMembers.map((m) => `- ${m.id}: ${m.name}`).join('\n') || '(no team members)'}
 
 Only set is_actionable=true if the message clearly requests one of those changes. A question, status update, or
-general comment is NOT actionable.`,
+general comment is NOT actionable. If it's actionable but you can't find a matching team member for a requested
+reassignment, still set is_actionable=true and leave suggested_assignee_id null — but write reply_message
+explaining that, in your own words, and naming who from the team members list above is actually available to
+assign instead (or say there's no one else yet if the list is empty).`,
   });
 
   return object;

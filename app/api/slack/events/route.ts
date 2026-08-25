@@ -198,7 +198,10 @@ async function handleAppMention(event: any, teamId: string) {
 // Syncs a reply in a Slack thread we created a Request from into that
 // Request's comments, so context discussed in Slack isn't lost.
 async function handleThreadReply(event: any, teamId: string) {
-  const eventId = `${event.event_ts || event.ts}:${event.channel}:reply`;
+  // Same dedupe key as handleAppMention's — a message that mentions the bot
+  // fires both an app_mention AND a plain message event for the identical
+  // underlying message, so they must share one identity to avoid double-processing.
+  const eventId = `${event.event_ts || event.ts}:${event.channel}`;
   const { error: dedupeError } = await supabaseAdmin
     .from('slack_processed_events')
     .insert({ slack_event_id: eventId });
@@ -285,7 +288,22 @@ async function handleThreadFollowUp({
   try {
     const intent = await classifyThreadReply({ text, teamMembers });
     if (!intent.is_actionable) return;
-    if (!intent.suggested_assignee_id && !intent.suggested_priority && !intent.suggested_request_type) return;
+
+    const hasChange = intent.suggested_assignee_id || intent.suggested_priority || intent.suggested_request_type;
+
+    if (!hasChange) {
+      // Actionable request, but nothing could be resolved (e.g. no matching
+      // team member) — the model writes its own explanation (who's actually
+      // available, etc.) in reply_message rather than us templating one.
+      if (intent.reply_message) {
+        await fetch('https://slack.com/api/chat.postMessage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${botAccessToken}` },
+          body: JSON.stringify({ channel, thread_ts: threadTs, text: intent.reply_message }),
+        });
+      }
+      return;
+    }
 
     const modelId = process.env.AI_MODEL || (process.env.AI_PROVIDER === 'openai' ? 'gpt-4o' : 'claude-sonnet-5');
 
@@ -300,15 +318,12 @@ async function handleThreadFollowUp({
 
     const projectSlug = (task as any).columns?.projects?.slug;
     const link = `${getURL()}dashboard/projects/${projectSlug}?task=${task.task_key}`;
+    const message = intent.reply_message ? `${intent.reply_message} ${link}` : `Drafted that change — review and confirm here: ${link}`;
 
     await fetch('https://slack.com/api/chat.postMessage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${botAccessToken}` },
-      body: JSON.stringify({
-        channel,
-        thread_ts: threadTs,
-        text: `Got it — I've drafted that change, review and confirm here: ${link}`,
-      }),
+      body: JSON.stringify({ channel, thread_ts: threadTs, text: message }),
     });
   } catch (error) {
     console.error('Failed to classify thread reply:', error);
