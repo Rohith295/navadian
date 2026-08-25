@@ -240,13 +240,21 @@ async function createRequestFromSlackMessage({
   });
 }
 
+// Cheap, zero-cost gate checked before ever calling the AI intent detector —
+// keeps passive monitoring from spending an AI call on every single message
+// in a channel. Deliberately biased toward matching too much rather than too
+// little; detectRequestIntent is still the real precision check afterward.
+const REQUEST_KEYWORDS =
+  /\b(nda|msa|contract|agreement|legal|redline|draft|review|sign(ature)?|counsel|clause|amendment|terms)\b/i;
+
 // Opt-in per Slack connection (off by default): reads every top-level channel
-// message and uses an AI gate to decide whether it's actually a request,
-// ignoring everything else. Skips anything that mentions the bot — that
-// message is already handled by the app_mention delivery of the same event.
+// message, first checks it against a keyword list, and only then uses an AI
+// gate to decide whether it's actually a request — ignoring everything else.
+// Skips anything that mentions the bot — that message is already handled by
+// the app_mention delivery of the same event.
 async function handlePassiveMessage(event: any, teamId: string, botUserId: string | undefined) {
   if (botUserId && (event.text || '').includes(`<@${botUserId}>`)) return;
-  if (!event.text) return;
+  if (!event.text || !REQUEST_KEYWORDS.test(event.text)) return;
 
   const eventId = `${event.event_ts || event.ts}:${event.channel}`;
   const { error: dedupeError } = await supabaseAdmin
