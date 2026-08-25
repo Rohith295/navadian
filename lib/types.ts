@@ -41,6 +41,42 @@ export interface Task {
     full_name: string | null;
     avatar_url: string | null;
   };
+  checklist_items?: TaskChecklistItem[];
+}
+
+export interface TaskChecklistItem {
+  id: string;
+  task_id: string;
+  content: string;
+  is_done: boolean;
+  position: number;
+  created_at: string;
+}
+
+export interface TaskAttachment {
+  id: string;
+  task_id: string;
+  uploaded_by: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string | null;
+  created_at: string;
+  profiles?: {
+    id: string;
+    email: string;
+    full_name: string | null;
+  };
+}
+
+export interface SlackWorkspace {
+  id: string;
+  team_id: string;
+  team_name: string | null;
+  project_id: string;
+  installed_by: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ProjectNote {

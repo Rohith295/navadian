@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +41,8 @@ import { TeamManagement } from '@/components/team-management';
 import { TaskComments } from '@/components/task-comments';
 import { ActivityFeed } from '@/components/activity-feed';
 import { ProjectNotes } from '@/components/project-notes';
+import { TaskChecklist } from '@/components/task-checklist';
+import { TaskAttachments } from '@/components/task-attachments';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/components/user-provider';
 import { toast } from 'sonner';
@@ -87,17 +89,21 @@ export default function ProjectPage() {
   const [editTaskDialogOpen, setEditTaskDialogOpen] = useState(false);
   const [columnDialogOpen, setColumnDialogOpen] = useState(false);
   const [editColumnDialogOpen, setEditColumnDialogOpen] = useState(false);
-  const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [projectRenameDialogOpen, setProjectRenameDialogOpen] = useState(false);
   const [projectDeleteDialogOpen, setProjectDeleteDialogOpen] = useState(false);
   const [selectedColumnId, setSelectedColumnId] = useState<string>('');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingColumn, setEditingColumn] = useState<Column | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [creating, setCreating] = useState(false);
   const [deletingProject, setDeletingProject] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
+  const [accessDenied, setAccessDenied] = useState<{
+    projectName: string;
+    projectDbId: string;
+    requestStatus: 'none' | 'pending' | 'denied';
+  } | null>(null);
+  const [requestingAccess, setRequestingAccess] = useState(false);
   
   // Task form state - FIXED: Use undefined instead of empty string for assigned_to
   const [taskTitle, setTaskTitle] = useState('');
@@ -116,6 +122,7 @@ export default function ProjectPage() {
   
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const projectId = params?.id as string;
 
 
@@ -127,12 +134,21 @@ export default function ProjectPage() {
     checkUser();
   }, [user, router]);
 
+  // Deep link from e.g. a Slack notification: /dashboard/projects/[id]?task=<taskId>
+  useEffect(() => {
+    const taskId = searchParams?.get('task');
+    if (!taskId || columns.length === 0) return;
+
+    const task = columns.flatMap((c) => c.tasks).find((t) => t.id === taskId);
+    if (task) openEditTaskDialog(task);
+  }, [columns, searchParams]);
+
   // Prevent page reload after project deletion
   useEffect(() => {
-    if (project === null && !loading) {
+    if (project === null && !loading && !accessDenied) {
       router.push('/dashboard');
     }
-  }, [project, loading, router]);
+  }, [project, loading, accessDenied, router]);
 
   const checkUser = async () => {
     if (!user) return;
@@ -156,6 +172,80 @@ export default function ProjectPage() {
     }
   };
 
+  const handleAccessDenied = async () => {
+    if (!user) return;
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) return;
+
+      const res = await fetch(`/api/projects/access-check?project_id=${projectId}&access_token=${token}`);
+      const data = await res.json();
+
+      if (!data.found) {
+        router.push('/dashboard');
+        return;
+      }
+
+      if (data.hasAccess) {
+        // RLS said no but this check says yes (e.g. stale client cache) — just retry the normal load.
+        await loadProject();
+        return;
+      }
+
+      setAccessDenied({
+        projectName: data.projectName,
+        projectDbId: data.projectDbId,
+        requestStatus: data.requestStatus,
+      });
+    } catch (error) {
+      console.error('Error checking project access:', error);
+      router.push('/dashboard');
+    }
+  };
+
+  const handleRequestAccess = async () => {
+    if (!user || !accessDenied) return;
+    setRequestingAccess(true);
+    try {
+      const { data: request, error: requestError } = await supabase
+        .from('project_access_requests')
+        .insert({ project_id: accessDenied.projectDbId, requested_by: user.id })
+        .select('id')
+        .single();
+
+      if (requestError) throw requestError;
+
+      const { data: owner } = await supabase
+        .from('projects')
+        .select('user_id')
+        .eq('id', accessDenied.projectDbId)
+        .maybeSingle();
+
+      if (owner) {
+        await supabase.from('notifications').insert({
+          user_id: owner.user_id,
+          type: 'access_requested',
+          title: 'Access requested',
+          message: `${user.full_name || user.email} requested access to "${accessDenied.projectName}"`,
+          data: {
+            project_id: accessDenied.projectDbId,
+            requested_by: user.id,
+            access_request_id: request.id,
+          },
+        });
+      }
+
+      setAccessDenied({ ...accessDenied, requestStatus: 'pending' });
+      toast.success('Access requested');
+    } catch (error: any) {
+      console.error('Error requesting access:', error);
+      toast.error('Failed to request access');
+    } finally {
+      setRequestingAccess(false);
+    }
+  };
+
   const loadProject = async () => {
     try {
       // Get project by slug
@@ -165,7 +255,10 @@ export default function ProjectPage() {
         .eq('slug', projectId)
         .single();
 
-      if (projectError) throw projectError;
+      if (projectError) {
+        await handleAccessDenied();
+        return;
+      }
       setProject(project);
 
       // Load project members
@@ -192,6 +285,10 @@ export default function ProjectPage() {
                 email,
                 full_name,
                 avatar_url
+              ),
+              checklist_items:task_checklist_items (
+                id,
+                is_done
               )
             `)
             .eq('column_id', column.id)
@@ -630,16 +727,6 @@ export default function ProjectPage() {
     }, 50);
   };
 
-  const openCommentsDialog = (task: Task) => {
-    // First update state
-    setSelectedTask(task);
-    
-    // Then delay dialog opening to prevent UI freezing
-    setTimeout(() => {
-      setCommentsDialogOpen(true);
-    }, 50);
-  };
-
   const openDeleteProjectDialog = () => {
     // Delay dialog opening to prevent UI freezing
     setTimeout(() => {
@@ -813,6 +900,36 @@ export default function ProjectPage() {
     );
   }
 
+  if (accessDenied) {
+    return (
+      <div className="flex-1 overflow-auto ">
+        <div className="max-w-7xl h-screen px-4 border border-border sm:px-6 lg:px-8 py-8  mx-4 my-4 rounded-xl shadow-sm bg-white dark:bg-[#0A0A0A]">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">{accessDenied.projectName}</h1>
+            <p className="text-muted-foreground mb-4">
+              You don&apos;t have access to this project.
+            </p>
+            {accessDenied.requestStatus === 'denied' ? (
+              <p className="text-sm text-muted-foreground">Access denied by the project owner.</p>
+            ) : accessDenied.requestStatus === 'pending' ? (
+              <Button disabled>Request sent — waiting for approval</Button>
+            ) : (
+              <Button onClick={handleRequestAccess} disabled={requestingAccess}>
+                {requestingAccess && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Request Access
+              </Button>
+            )}
+            <div className="mt-4">
+              <Button variant="outline" asChild>
+                <Link href="/dashboard">Back to Dashboard</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!project) {
     return (
       <div className="flex-1 overflow-auto ">
@@ -945,7 +1062,7 @@ export default function ProjectPage() {
             onAddTask={openTaskDialog}
             onEditTask={openEditTaskDialog}
             onDeleteTask={handleDeleteTask}
-            onViewComments={openCommentsDialog}
+            onViewComments={openEditTaskDialog}
             onToggleDone={handleToggleDone}
           />
         </TabsContent>
@@ -970,7 +1087,7 @@ export default function ProjectPage() {
 
       {/* Edit Request Dialog */}
       <Dialog key={editingTask?.id || 'edit-dialog'} open={editTaskDialogOpen} onOpenChange={setEditTaskDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Request</DialogTitle>
             <DialogDescription>
@@ -1073,7 +1190,9 @@ export default function ProjectPage() {
                 </SelectContent>
               </Select>
             </div>
-            
+
+            {editingTask && <TaskChecklist taskId={editingTask.id} />}
+
             <div className="flex gap-3 pt-4">
               <Button type="submit" size="xs" disabled={creating} className="flex-1">
                 {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -1084,6 +1203,19 @@ export default function ProjectPage() {
               </Button>
             </div>
           </form>
+
+          {editingTask && user && (
+            <div className="space-y-6 pt-6 mt-2 border-t">
+              <TaskAttachments taskId={editingTask.id} currentUserId={user.id} />
+              <TaskComments taskId={editingTask.id} currentUserId={user.id} />
+              <ActivityFeed
+                projectId={project?.id || ''}
+                entityType="task"
+                entityId={editingTask.id}
+                limit={10}
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -1118,27 +1250,6 @@ export default function ProjectPage() {
               </Button>
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Task Comments Dialog */}
-      <Dialog open={commentsDialogOpen} onOpenChange={setCommentsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <MessageSquare className="h-5 w-5 mr-2" />
-              {selectedTask?.title}
-            </DialogTitle>
-            <DialogDescription>
-              Request comments and discussion
-            </DialogDescription>
-          </DialogHeader>
-          {selectedTask && (
-            <TaskComments 
-              taskId={selectedTask.id} 
-              currentUserId={user!.id}
-            />
-          )}
         </DialogContent>
       </Dialog>
 

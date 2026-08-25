@@ -118,10 +118,10 @@ export default function SharePage({ params }: { params: { token: string } }) {
                   src={theme === 'light' ? '/logo-light.png' : '/logo-dark.png'} 
                   width={30} 
                   height={30} 
-                  alt="navaloom Logo"
+                  alt="navadian Logo"
                 />
               </div>
-             <span className="font-semibold">navaloom.</span></Link>
+             <span className="font-semibold">navadian.</span></Link>
           </div>
         </div>
       </div>

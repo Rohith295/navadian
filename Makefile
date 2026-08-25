@@ -1,8 +1,11 @@
 .PHONY: up
 
-# Starts Next.js and exposes it through a temporary Cloudflare Quick Tunnel.
-# Stop both processes with Ctrl-C. The public trycloudflare.com URL is printed
-# by cloudflared once the tunnel is ready.
+PORT ?= 3000
+NGROK_DOMAIN ?= pretypographical-intervertebrally-marisol.ngrok-free.dev
+
+# Starts Next.js and exposes it through ngrok on the reserved static domain,
+# so Slack's OAuth Redirect URL / Events Request URL never need updating
+# between runs. Stop both processes with Ctrl-C.
 up:
-	@command -v cloudflared >/dev/null 2>&1 || { echo "cloudflared is required. Install it with: brew install cloudflared"; exit 1; }
-	@npm run dev & frontend_pid=$$!; trap 'kill $$frontend_pid 2>/dev/null' EXIT INT TERM; cloudflared tunnel --url http://localhost:3000
+	@command -v ngrok >/dev/null 2>&1 || { echo "ngrok is required. Install it with: brew install ngrok"; exit 1; }
+	@PORT=$(PORT) npm run dev & frontend_pid=$$!; trap 'kill $$frontend_pid 2>/dev/null' EXIT INT TERM; ngrok http --url=$(NGROK_DOMAIN) $(PORT)

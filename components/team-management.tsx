@@ -261,7 +261,7 @@ export function TeamManagement({ projectId, userSubscriptionStatus, isProjectOwn
 
       if (!existingUser) {
         toast.error(
-          `No user found with email "${inviteEmail}". They need to create a navaloom account first.`,
+          `No user found with email "${inviteEmail}". They need to create a navadian account first.`,
           {
             description: 'Ask them to sign up first, then try adding them again.',
             duration: 6000,
@@ -430,7 +430,7 @@ export function TeamManagement({ projectId, userSubscriptionStatus, isProjectOwn
                   <DialogHeader>
                     <DialogTitle>Invite Team Member</DialogTitle>
                     <DialogDescription>
-                      Search for existing navaloom users by email to add them to your project.
+                      Search for existing navadian users by email to add them to your project.
                     </DialogDescription>
                   </DialogHeader>
                   <form onSubmit={handleInviteMember} className="space-y-4">
@@ -501,7 +501,7 @@ export function TeamManagement({ projectId, userSubscriptionStatus, isProjectOwn
                             <div>
                               <p className="text-sm font-medium">No users found</p>
                               <p className="text-xs">
-                                The person needs to create a navaloom account first.
+                                The person needs to create a navadian account first.
                               </p>
                             </div>
                           </div>
@@ -509,7 +509,7 @@ export function TeamManagement({ projectId, userSubscriptionStatus, isProjectOwn
                       )}
 
                       <p className="text-xs text-muted-foreground">
-                        Only users who already have navaloom accounts can be added to projects.
+                        Only users who already have navadian accounts can be added to projects.
                       </p>
                     </div>
                     

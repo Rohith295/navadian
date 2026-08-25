@@ -103,12 +103,12 @@ export default function LoginPage() {
                   src={theme === 'light' ? '/logo-light.png' : '/logo-dark.png'} 
                   width={50} 
                   height={50} 
-                  alt="navaloom Logo"
+                  alt="navadian Logo"
                 />
               </div>
           <CardTitle className="text-2xl">Welcome back</CardTitle>
           <CardDescription>
-            Sign in to your navaloom account
+            Sign in to your navadian account
           </CardDescription>
         </CardHeader>
         <CardContent>

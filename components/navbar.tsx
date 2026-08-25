@@ -60,7 +60,7 @@ export function Navbar({ user, onSignOut, loading = false }: NavbarProps) {
                   src={theme === 'light' ? '/logo-light.png' : '/logo-dark.png'} 
                   width={40} 
                   height={40} 
-                  alt="navaloom Logo"
+                  alt="navadian Logo"
                 />
                 <Badge variant="outline" className="hidden sm:inline-flex text-xs text-gray-500 border border-gray-200 dark:border-gray-700 dark:text-gray-400 rounded-full">Beta</Badge>
               </div>

@@ -34,7 +34,7 @@ import {
 
 interface Notification {
   id: string;
-  type: "task_assigned" | "task_updated" | "project_invited" | "comment_added";
+  type: "task_assigned" | "task_updated" | "project_invited" | "comment_added" | "access_requested";
   title: string;
   message: string;
   data: any;
@@ -133,6 +133,54 @@ export function Notifications({ userId }: NotificationsProps) {
     }
   };
 
+  const approveAccessRequest = async (notification: Notification) => {
+    const { project_id, requested_by, access_request_id } = notification.data || {};
+    if (!project_id || !requested_by) return;
+
+    try {
+      const { error: memberError } = await supabase.from("project_members").insert({
+        project_id,
+        user_id: requested_by,
+        role: "member",
+        invited_by: userId,
+        joined_at: new Date().toISOString(),
+      });
+      if (memberError) throw memberError;
+
+      if (access_request_id) {
+        await supabase
+          .from("project_access_requests")
+          .update({ status: "approved", resolved_by: userId, resolved_at: new Date().toISOString() })
+          .eq("id", access_request_id);
+      }
+
+      await markAsRead(notification.id);
+      toast.success("Access granted");
+    } catch (error: any) {
+      console.error("Error approving access request:", error);
+      toast.error("Failed to grant access");
+    }
+  };
+
+  const denyAccessRequest = async (notification: Notification) => {
+    const { access_request_id } = notification.data || {};
+    try {
+      if (access_request_id) {
+        const { error } = await supabase
+          .from("project_access_requests")
+          .update({ status: "denied", resolved_by: userId, resolved_at: new Date().toISOString() })
+          .eq("id", access_request_id);
+        if (error) throw error;
+      }
+
+      await markAsRead(notification.id);
+      toast.success("Access request denied");
+    } catch (error: any) {
+      console.error("Error denying access request:", error);
+      toast.error("Failed to deny access request");
+    }
+  };
+
   const deleteNotification = async (notificationId: string) => {
     try {
       const { error } = await supabase
@@ -161,6 +209,8 @@ export function Notifications({ userId }: NotificationsProps) {
         return <FolderOpen className="h-4 w-4 text-green-500" />;
       case "comment_added":
         return <MessageSquare className="h-4 w-4 text-purple-500" />;
+      case "access_requested":
+        return <User className="h-4 w-4 text-orange-500" />;
       default:
         return <Bell className="h-4 w-4 text-gray-500" />;
     }
@@ -259,6 +309,25 @@ export function Notifications({ userId }: NotificationsProps) {
                         <p className="text-xs text-muted-foreground mt-1">
                           {notification.message}
                         </p>
+                        {notification.type === "access_requested" && !notification.read && (
+                          <div className="flex items-center space-x-2 mt-2">
+                            <Button
+                              size="sm"
+                              className="h-6 px-2 text-xs"
+                              onClick={() => approveAccessRequest(notification)}
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 px-2 text-xs"
+                              onClick={() => denyAccessRequest(notification)}
+                            >
+                              Deny
+                            </Button>
+                          </div>
+                        )}
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-xs text-muted-foreground">
                             {formatDate(notification.created_at)}

@@ -23,7 +23,6 @@ import {
   FolderOpenIcon,
   Cable,
   PlugZap,
-  List,
   Brain,
   Calendar,
   Bookmark,
@@ -92,8 +91,7 @@ const menuItems = [
   { title: "Projects", url: "/dashboard/projects", icon: FolderIcon },
   { title: "Bookmarks", url: "/dashboard/bookmarks", icon: Bookmark },
   { title: "Analytics", url: "/dashboard/analytics", icon: BarChartIcon },
-  { title: "Integrations (soon)", url: "/dashboard/integrations", icon: PlugZap, disabled: true },
-  { title: "Lists (soon)", url: "/dashboard/listd", icon: List, disabled: true },
+  { title: "Integrations", url: "/dashboard/integrations", icon: PlugZap },
   { title: "AI Planner (soon)", url: "/dashboard/integrations", icon: Brain, disabled: true },
   { title: "Calendar", url: "/dashboard/calendar", icon: Calendar },
   { title: "Settings", url: "/dashboard/settings", icon: SettingsIcon },
@@ -215,9 +213,9 @@ export function AppSidebar({ onSignOut, onProjectUpdate }: AppSidebarProps) {
                   src={theme === 'dark' ? '/logo-dark.png' : '/logo-light.png'} 
                   width={40} 
                   height={40} 
-                  alt="navaloom Logo"
+                  alt="navadian Logo"
                 />
-                <span className="text-lg">navaloom</span>
+                <span className="text-lg">navadian</span>
                 </Link>
                 <Badge variant="outline" className="text-xs text-gray-500 border border-gray-200 dark:border-gray-700 dark:text-gray-400 rounded-full">Beta</Badge>
 

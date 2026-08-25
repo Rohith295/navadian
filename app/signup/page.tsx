@@ -108,12 +108,12 @@ export default function SignUpPage() {
                   src={theme === 'light' ? '/logo-light.png' : '/logo-dark.png'} 
                   width={50} 
                   height={50} 
-                  alt="navaloom Logo"
+                  alt="navadian Logo"
                 />
               </div>
-          <CardTitle className="text-2xl">Welcome to navaloom</CardTitle>
+          <CardTitle className="text-2xl">Welcome to navadian</CardTitle>
           <CardDescription>
-            Create your account and get started with navaloom today
+            Create your account and get started with navadian today
           </CardDescription>
         </CardHeader>
         <CardContent>

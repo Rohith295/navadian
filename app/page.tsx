@@ -320,7 +320,7 @@ export default function Home() {
         )}
       >
         <TextReveal>
-          navaloom is a contract lifecycle management tool for legal teams. Cut
+          navadian is a contract lifecycle management tool for legal teams. Cut
           the email chains, focus on closing requests. Not trying to replace your
           e-signature tool, just making the intake, review, and approval process simple and right.
         </TextReveal>
@@ -497,9 +497,9 @@ export default function Home() {
                   src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
                   width={40}
                   height={40}
-                  alt="navaloom Logo"
+                  alt="navadian Logo"
                 />
-                <span className="">navaloom</span>
+                <span className="">navadian</span>
               </div>
               <p className="text-sm text-gray-500 hover:text-primary transition-all duration-200 dark:text-gray-400">
                 Contract lifecycle management, built for legal teams tracking
@@ -563,7 +563,7 @@ export default function Home() {
                 </li>
                 <li>
                   <Link
-                    href="mailto:support@navaloom.app"
+                    href="mailto:support@navadian.app"
                     className="text-gray-500 hover:text-primary transition-all duration-200 dark:text-gray-400"
                   >
                     Contact
@@ -574,7 +574,7 @@ export default function Home() {
           </div>
 
           <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; 2026 navaloom. All rights reserved.</p>
+            <p>&copy; 2026 navadian. All rights reserved.</p>
           </div>
         </div>
       </footer>

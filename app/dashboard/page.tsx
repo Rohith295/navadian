@@ -281,7 +281,7 @@ export default function DashboardPage() {
                 <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <CardTitle className="mb-2">No projects yet</CardTitle>
                 <CardDescription className="mb-4">
-                  Create your first project to get started with navaloom
+                  Create your first project to get started with navadian
                 </CardDescription>
                 <Button onClick={() => router.push('/dashboard/projects/new')}>
                   <Plus className="h-4 w-4 mr-2" />

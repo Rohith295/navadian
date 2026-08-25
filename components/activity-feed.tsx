@@ -37,15 +37,17 @@ interface ActivityLog {
 interface ActivityFeedProps {
   projectId: string;
   limit?: number;
+  entityType?: string;
+  entityId?: string;
 }
 
-export function ActivityFeed({ projectId, limit = 20 }: ActivityFeedProps) {
+export function ActivityFeed({ projectId, limit = 20, entityType, entityId }: ActivityFeedProps) {
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadActivities();
-  }, [projectId]);
+  }, [projectId, entityType, entityId]);
 
   const loadActivities = async () => {
     try {
@@ -62,6 +64,9 @@ export function ActivityFeed({ projectId, limit = 20 }: ActivityFeedProps) {
         `)
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
+
+      if (entityType) query = query.eq('entity_type', entityType);
+      if (entityId) query = query.eq('entity_id', entityId);
 
       if (limit) {
         query = query.limit(limit);

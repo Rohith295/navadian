@@ -30,6 +30,7 @@ import {
   User,
   MessageSquare,
   Check,
+  ListChecks,
 } from 'lucide-react';
 
 import type { Task, Column, ProjectMember } from '@/lib/types';
@@ -78,6 +79,7 @@ function TaskCard({ task, index, onEdit, onDelete, onViewComments, onToggleDone,
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
+          onClick={() => onEdit(task)}
           className={`bg-muted/60 cursor-grab hover:shadow-md transition-shadow ${snapshot.isDragging ? 'ring-2 ring-primary' : ''} ${task.is_done ? 'opacity-75' : ''}`}
         >
           <CardContent className="p-4">
@@ -133,6 +135,12 @@ function TaskCard({ task, index, onEdit, onDelete, onViewComments, onToggleDone,
                 <div className="flex items-center space-x-2">
                     <Badge variant="secondary" className={`text-xs ${getRequestTypeColor(task.request_type)}`}>{task.request_type}</Badge>
                     <Badge variant="secondary" className={`text-xs ${getPriorityColor(task.priority)}`}><Flag className="h-3 w-3 mr-1" />{task.priority}</Badge>
+                    {task.checklist_items && task.checklist_items.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        <ListChecks className="h-3 w-3 mr-1" />
+                        {task.checklist_items.filter((i) => i.is_done).length}/{task.checklist_items.length}
+                      </Badge>
+                    )}
                 </div>
                 <div className="flex items-center"><User className="h-3 w-3 mr-1" />{assignedUser ? (assignedUser.profiles.full_name || assignedUser.profiles.email) : 'Unassigned'}</div>
               </div>
