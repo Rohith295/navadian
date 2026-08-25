@@ -18,6 +18,9 @@
     "vercel-build": "prisma generate && next build --debug"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.42",
+    "@ai-sdk/openai": "^4.0.47",
+    "@ai-sdk/react": "^4.0.82",
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^3.9.0",
     "@next/swc-wasm-nodejs": "13.5.1",
@@ -54,6 +57,7 @@
     "@types/react": "18.2.22",
     "@types/react-dom": "18.2.7",
     "@vercel/analytics": "^1.5.0",
+    "ai": "^7.0.79",
     "autoprefixer": "10.4.15",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -84,7 +88,7 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "5.2.2",
     "vaul": "^0.9.9",
-    "zod": "^3.25.67"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@prisma/client": "^5.7.1",

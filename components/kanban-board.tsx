@@ -102,9 +102,14 @@ function TaskCard({ task, index, onEdit, onDelete, onViewComments, onToggleDone,
                       </div>
                     </Button>
                   )}
-                  <h4 className={`font-medium text-sm leading-tight flex-1 line-clamp-2 ${task.is_done ? 'line-through text-muted-foreground' : ''}`}>
-                    {task.title}
-                  </h4>
+                  <div className="flex-1 min-w-0">
+                    {task.task_key && (
+                      <span className="text-xs text-muted-foreground font-mono">{task.task_key}</span>
+                    )}
+                    <h4 className={`font-medium text-sm leading-tight line-clamp-2 ${task.is_done ? 'line-through text-muted-foreground' : ''}`}>
+                      {task.title}
+                    </h4>
+                  </div>
                 </div>
                 {!readOnly && (
                   <DropdownMenu>

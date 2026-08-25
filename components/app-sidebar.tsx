@@ -27,6 +27,7 @@ import {
   Calendar,
   Bookmark,
   CrownIcon,
+  MessageCircle,
 } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { toast } from "sonner"
@@ -92,7 +93,8 @@ const menuItems = [
   { title: "Bookmarks", url: "/dashboard/bookmarks", icon: Bookmark },
   { title: "Analytics", url: "/dashboard/analytics", icon: BarChartIcon },
   { title: "Integrations", url: "/dashboard/integrations", icon: PlugZap },
-  { title: "AI Planner (soon)", url: "/dashboard/integrations", icon: Brain, disabled: true },
+  { title: "AI Planner", url: "/dashboard/ai-planner", icon: Brain },
+  { title: "Assistant", url: "/dashboard/assistant", icon: MessageCircle },
   { title: "Calendar", url: "/dashboard/calendar", icon: Calendar },
   { title: "Settings", url: "/dashboard/settings", icon: SettingsIcon },
   { title: "Billing", url: "/dashboard/billing", icon: CreditCardIcon },

@@ -37,12 +37,15 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { TeamManagement } from '@/components/team-management';
 import { TaskComments } from '@/components/task-comments';
 import { ActivityFeed } from '@/components/activity-feed';
 import { ProjectNotes } from '@/components/project-notes';
 import { TaskChecklist } from '@/components/task-checklist';
 import { TaskAttachments } from '@/components/task-attachments';
+import { TaskAiSuggestion } from '@/components/task-ai-suggestion';
+import { TaskThreadSummary } from '@/components/task-thread-summary';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/components/user-provider';
 import { toast } from 'sonner';
@@ -139,7 +142,7 @@ export default function ProjectPage() {
     const taskId = searchParams?.get('task');
     if (!taskId || columns.length === 0) return;
 
-    const task = columns.flatMap((c) => c.tasks).find((t) => t.id === taskId);
+    const task = columns.flatMap((c) => c.tasks).find((t) => t.id === taskId || t.task_key === taskId);
     if (task) openEditTaskDialog(task);
   }, [columns, searchParams]);
 
@@ -1089,7 +1092,7 @@ export default function ProjectPage() {
       <Dialog key={editingTask?.id || 'edit-dialog'} open={editTaskDialogOpen} onOpenChange={setEditTaskDialogOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Request</DialogTitle>
+            <DialogTitle>Edit Request{editingTask?.task_key ? ` · ${editingTask.task_key}` : ''}</DialogTitle>
             <DialogDescription>
               Update the request details.
             </DialogDescription>
@@ -1132,6 +1135,33 @@ export default function ProjectPage() {
                 rows={3}
               />
             </div>
+
+            {editingTask?.source_text && (
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button type="button" size="sm" variant="ghost" className="text-xs text-muted-foreground px-0">
+                    Show original Slack message
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <blockquote className="mt-1 border-l-2 pl-3 text-sm text-muted-foreground italic">
+                    {editingTask.source_text}
+                  </blockquote>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+
+            {editingTask && (
+              <TaskAiSuggestion
+                taskId={editingTask.id}
+                projectMembers={projectMembers}
+                onApply={(fields) => {
+                  setTaskRequestType(fields.request_type as 'NDA' | 'Contract' | 'MSA' | 'Other');
+                  setTaskPriority(fields.priority as 'low' | 'medium' | 'high');
+                  if (fields.suggested_assignee) setTaskAssignedTo(fields.suggested_assignee);
+                }}
+              />
+            )}
 
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
@@ -1207,6 +1237,7 @@ export default function ProjectPage() {
           {editingTask && user && (
             <div className="space-y-6 pt-6 mt-2 border-t">
               <TaskAttachments taskId={editingTask.id} currentUserId={user.id} />
+              <TaskThreadSummary taskId={editingTask.id} />
               <TaskComments taskId={editingTask.id} currentUserId={user.id} />
               <ActivityFeed
                 projectId={project?.id || ''}

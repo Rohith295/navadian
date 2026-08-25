@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Slack, Check } from 'lucide-react';
+import { Slack, Check, Mail } from 'lucide-react';
 import { useUser } from '@/components/user-provider';
 import { supabase } from '@/lib/supabase';
 
@@ -20,12 +20,19 @@ interface SlackStatus {
   teamName: string | null;
 }
 
+interface EmailStatus {
+  connected: boolean;
+  inboundAddress: string | null;
+}
+
 export default function IntegrationsPage() {
   const { user } = useUser();
   const searchParams = useSearchParams();
   const [projects, setProjects] = useState<OwnedProject[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [status, setStatus] = useState<SlackStatus | null>(null);
+  const [emailSelectedProjectId, setEmailSelectedProjectId] = useState<string>('');
+  const [emailStatus, setEmailStatus] = useState<EmailStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,6 +52,10 @@ export default function IntegrationsPage() {
     if (selectedProjectId) loadStatus(selectedProjectId);
   }, [selectedProjectId]);
 
+  useEffect(() => {
+    if (emailSelectedProjectId) loadEmailStatus(emailSelectedProjectId);
+  }, [emailSelectedProjectId]);
+
   const loadProjects = async () => {
     if (!user) return;
     const { data } = await supabase
@@ -59,7 +70,10 @@ export default function IntegrationsPage() {
     );
 
     setProjects(owned);
-    if (owned.length > 0) setSelectedProjectId(owned[0].id);
+    if (owned.length > 0) {
+      setSelectedProjectId(owned[0].id);
+      setEmailSelectedProjectId(owned[0].id);
+    }
     setLoading(false);
   };
 
@@ -72,6 +86,17 @@ export default function IntegrationsPage() {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (res.ok) setStatus(await res.json());
+  };
+
+  const loadEmailStatus = async (projectId: string) => {
+    const { data: session } = await supabase.auth.getSession();
+    const token = session.session?.access_token;
+    if (!token) return;
+
+    const res = await fetch(`/api/email/settings?project_id=${projectId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) setEmailStatus(await res.json());
   };
 
   const connect = async () => {
@@ -97,6 +122,43 @@ export default function IntegrationsPage() {
       loadStatus(selectedProjectId);
     } else {
       toast.error('Failed to disconnect Slack');
+    }
+  };
+
+  const connectEmail = async () => {
+    const { data: session } = await supabase.auth.getSession();
+    const token = session.session?.access_token;
+    if (!token || !emailSelectedProjectId) return;
+
+    const res = await fetch(`/api/email/settings?project_id=${emailSelectedProjectId}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.ok) {
+      toast.success('Email intake connected');
+      loadEmailStatus(emailSelectedProjectId);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error || 'Failed to connect email intake');
+    }
+  };
+
+  const disconnectEmail = async () => {
+    const { data: session } = await supabase.auth.getSession();
+    const token = session.session?.access_token;
+    if (!token || !emailSelectedProjectId) return;
+
+    const res = await fetch(`/api/email/settings?project_id=${emailSelectedProjectId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.ok) {
+      toast.success('Email intake disconnected');
+      loadEmailStatus(emailSelectedProjectId);
+    } else {
+      toast.error('Failed to disconnect email intake');
     }
   };
 
@@ -153,6 +215,57 @@ export default function IntegrationsPage() {
             ) : (
               <Button onClick={connect} disabled={!selectedProjectId}>
                 Add to Slack
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {projects.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Mail className="h-6 w-6" />
+              <div>
+                <CardTitle>Email</CardTitle>
+                <CardDescription>
+                  Forward or CC an email to automatically create a Request.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Requests will be created in</label>
+              <select
+                className="w-full border rounded-md px-3 py-2 bg-background"
+                value={emailSelectedProjectId}
+                onChange={(e) => setEmailSelectedProjectId(e.target.value)}
+              >
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {emailStatus?.connected ? (
+              <div className="space-y-2">
+                <Badge variant="secondary" className="gap-1">
+                  <Check className="h-3 w-3" />
+                  Connected
+                </Badge>
+                <p className="text-sm text-muted-foreground">
+                  Forward requests to <span className="font-mono">{emailStatus.inboundAddress}</span>
+                </p>
+                <Button variant="outline" onClick={disconnectEmail}>
+                  Disconnect
+                </Button>
+              </div>
+            ) : (
+              <Button onClick={connectEmail} disabled={!emailSelectedProjectId}>
+                Enable Email Intake
               </Button>
             )}
           </CardContent>

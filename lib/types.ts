@@ -5,6 +5,7 @@ export interface Project {
   slug: string;
   created_at: string;
   user_id: string;
+  key_prefix: string;
 }
 
 export interface Profile {
@@ -23,8 +24,10 @@ export interface Column {
 
 export interface Task {
   id: string;
+  task_key: string;
   title: string;
   description: string | null;
+  source_text: string | null;
   position: number;
   priority: 'low' | 'medium' | 'high';
   request_type: 'NDA' | 'Contract' | 'MSA' | 'Other';
